@@ -1,23 +1,33 @@
-// src/pages/Home.jsx
-import { useState } from "react";
-import { stories } from "../data/stories";
+import { useState, useEffect } from "react";
+import { stories as fallbackStories } from "../data/stories";
 import StoryCard from "../components/StoryCard";
 
 export default function Home() {
+  const [storyList, setStoryList] = useState(fallbackStories);
   const [activeCategory, setActiveCategory] = useState("Semua");
 
-  // Ambil semua kategori unik secara otomatis dari data
-  const categories = ["Semua", ...new Set(stories.map((s) => s.category))];
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/api/stories")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setStoryList(data);
+        }
+      })
+      .catch(() => {
+        // Jika server Laravel belum aktif, gunakan fallback stories.js
+      });
+  }, []);
 
-  // Filter cerita sesuai kategori yang dipilih
+  const categories = ["Semua", ...new Set(storyList.map((s) => s.category))];
+
   const filteredStories =
     activeCategory === "Semua"
-      ? stories
-      : stories.filter((s) => s.category === activeCategory);
+      ? storyList
+      : storyList.filter((s) => s.category === activeCategory);
 
   return (
     <main className="max-w-[760px] mx-auto px-4 py-12">
-      {/* Profil Publikasi Penulis */}
       <section className="mb-10 pb-8 border-b border-proseBorder">
         <h1 className="font-serif text-3xl md:text-4xl font-bold tracking-tight text-proseText mb-2">
           Surya
@@ -28,7 +38,6 @@ export default function Home() {
         </p>
       </section>
 
-      {/* Tab Filter Kategori (Gaya Medium) */}
       <div className="flex items-center gap-6 border-b border-proseBorder mb-6 overflow-x-auto pb-1 text-sm font-sans">
         {categories.map((category) => {
           const isActive = activeCategory === category;
@@ -43,7 +52,6 @@ export default function Home() {
               }`}
             >
               {category}
-              {/* Garis bawah penanda tab aktif */}
               {isActive && (
                 <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-proseText" />
               )}
@@ -52,17 +60,10 @@ export default function Home() {
         })}
       </div>
 
-      {/* Feed Cerita Hasil Filter */}
       <section>
-        {filteredStories.length > 0 ? (
-          filteredStories.map((story) => (
-            <StoryCard key={story.slug} story={story} />
-          ))
-        ) : (
-          <p className="py-12 text-center text-sm font-sans text-proseMuted">
-            Belum ada cerita di kategori ini.
-          </p>
-        )}
+        {filteredStories.map((story) => (
+          <StoryCard key={story.slug} story={story} />
+        ))}
       </section>
     </main>
   );

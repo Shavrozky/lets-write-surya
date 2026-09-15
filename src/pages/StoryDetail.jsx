@@ -10,11 +10,38 @@ import { getReadingStats } from "../utils/readingTime";
 
 export default function StoryDetail() {
   const { slug } = useParams();
-  const story = stories.find((s) => s.slug === slug);
+  const [story, setStory] = useState(null);
+  const [loading, setLoading] = useState(true);
   const contentRef = useRef(null);
 
+  // Fetch data dengan validasi & fallback aman
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
+    setLoading(true);
+
+    fetch(`http://127.0.0.1:8000/api/stories/${slug}`)
+      .then((res) => {
+        // Jika response Laravel bukan 200 OK (misal 404/500), paksa lempar error
+        if (!res.ok) {
+          throw new Error("Gagal mengambil dari API");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        // Pastikan data memiliki title dan content yang valid
+        if (data && data.title && data.content) {
+          setStory(data);
+        } else {
+          throw new Error("Format data API tidak valid");
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        // Fallback otomatis ke data lokal stories.js
+        const local = stories.find((s) => s.slug === slug);
+        setStory(local || null);
+        setLoading(false);
+      });
   }, [slug]);
 
   const [readingTheme, setReadingTheme] = useState("light");
@@ -56,12 +83,22 @@ export default function StoryDetail() {
   // Copy Teks Kutipan Berformat
   const handleCopyQuote = (e) => {
     e.stopPropagation();
-    const formatted = `“${selectedQuote}”\n\n— Surya, dari naskah “${story.title}”\nhttps://katasurya.my.id/cerita/${story.slug}`;
+    const formatted = `“${selectedQuote}”\n\n— Surya, dari naskah “${story?.title}”\nhttps://katasurya.my.id/cerita/${story?.slug}`;
     navigator.clipboard.writeText(formatted);
     setTooltipPos(null);
     showToast("Kutipan berhasil disalin dengan rapi");
   };
 
+  // 1. Tampilan saat proses loading data berlangsung
+  if (loading) {
+    return (
+      <div className="max-w-[680px] mx-auto px-4 py-32 text-center text-sm font-sans text-neutral-400">
+        Memuat naskah cerita...
+      </div>
+    );
+  }
+
+  // 2. Tampilan jika cerita benar-benar tidak ditemukan (baik di API maupun stories.js)
   if (!story) {
     return (
       <div className="max-w-[680px] mx-auto px-4 py-24 text-center">
@@ -73,7 +110,7 @@ export default function StoryDetail() {
     );
   }
 
-  const { wordCount, readTime } = getReadingStats(story.content);
+  const { wordCount, readTime } = getReadingStats(story.content || "");
   const recommendedStories = stories.filter((s) => s.slug !== slug).slice(0, 2);
 
   const handleCopyLink = () => {
@@ -141,7 +178,7 @@ export default function StoryDetail() {
         >
           <button
             onClick={handleCopyQuote}
-            className="flex items-center gap-1.5 bg-neutral-900 text-white px-3 py-1.5 rounded-md shadow-xl text-xs font-sans hover:bg-neutral-800 transition-colors"
+            className="flex items-center gap-1.5 bg-neutral-900 text-white px-3 py-1.5 rounded-md shadow-xl text-xs font-sans hover:bg-neutral-800 transition-colors cursor-pointer"
           >
             <Quote size={12} />
             <span>Kutip Kalimat Ini</span>
@@ -308,7 +345,7 @@ export default function StoryDetail() {
             <ClapButton slug={story.slug} theme={readingTheme} />
           </div>
 
-          {/* Bio Singkat */}
+          {/* Bio Singkat Penulis */}
           <div className={`pt-6 border-t ${currentTheme.border}`}>
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-full bg-neutral-200 overflow-hidden flex-shrink-0">
@@ -358,7 +395,7 @@ export default function StoryDetail() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {recommendedStories.map((item) => {
-                  const itemStats = getReadingStats(item.content);
+                  const itemStats = getReadingStats(item.content || "");
                   return (
                     <Link
                       key={item.slug}
