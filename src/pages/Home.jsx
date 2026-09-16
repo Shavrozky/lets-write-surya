@@ -7,15 +7,28 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState("Semua");
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/stories")
-      .then((res) => res.json())
+    const API_BASE_URL =
+      import.meta.env.VITE_API_URL || "https://api.katasurya.my.id/api";
+
+    fetch(`${API_BASE_URL}/stories`)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        // Cukup pastikan respon berupa array
+        if (Array.isArray(data)) {
           setStoryList(data);
         }
       })
-      .catch(() => {
-        // Jika server Laravel belum aktif, gunakan fallback stories.js
+      .catch((err) => {
+        console.warn(
+          "Gagal mengambil naskah dari API, menggunakan fallback lokal:",
+          err,
+        );
+        // setStoryList(fallbackStories); // jika ingin fallback
       });
   }, []);
 
