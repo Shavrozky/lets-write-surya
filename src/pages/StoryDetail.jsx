@@ -1,34 +1,55 @@
 // src/pages/StoryDetail.jsx
 import { useState, useEffect, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
 import { stories } from "../data/stories";
 import ReactMarkdown from "react-markdown";
 import { ArrowLeft, Share2, Check, Quote } from "lucide-react";
 import ReadingProgressBar from "../components/ReadingProgressBar";
 import ClapButton from "../components/ClapButton";
 import { getReadingStats } from "../utils/readingTime";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { auth } from "../utils/auth";
+import { deleteStory } from "../services/api";
 
 export default function StoryDetail() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const [story, setStory] = useState(null);
   const [loading, setLoading] = useState(true);
   const contentRef = useRef(null);
 
-  // Fetch data dengan validasi & fallback aman
+  // Mengambil token via helper resmi auth.js
+  const token = auth.getToken();
+  const isLoggedIn = auth.isAuthenticated();
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Yakin ingin menghapus naskah "${story?.title}"?`))
+      return;
+
+    try {
+      await deleteStory(slug, token);
+      alert("Naskah berhasil dihapus.");
+      navigate("/");
+    } catch (err) {
+      alert("Gagal menghapus naskah: " + err.message);
+    }
+  };
+
+  const API_BASE_URL =
+    import.meta.env.VITE_API_URL || "https://api.katasurya.my.id/api";
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
     setLoading(true);
 
-    fetch(`http://127.0.0.1:8000/api/stories/${slug}`)
+    // Menggunakan API_BASE_URL dinamis
+    fetch(`${API_BASE_URL}/stories/${slug}`)
       .then((res) => {
-        // Jika response Laravel bukan 200 OK (misal 404/500), paksa lempar error
         if (!res.ok) {
           throw new Error("Gagal mengambil dari API");
         }
         return res.json();
       })
       .then((data) => {
-        // Pastikan data memiliki title dan content yang valid
         if (data && data.title && data.content) {
           setStory(data);
         } else {
@@ -37,12 +58,12 @@ export default function StoryDetail() {
         setLoading(false);
       })
       .catch(() => {
-        // Fallback otomatis ke data lokal stories.js
+        // Fallback otomatis ke data lokal jika API gagal/offline
         const local = stories.find((s) => s.slug === slug);
         setStory(local || null);
         setLoading(false);
       });
-  }, [slug]);
+  }, [slug, API_BASE_URL]);
 
   const [readingTheme, setReadingTheme] = useState("light");
   const [fontSize, setFontSize] = useState("md");
@@ -305,7 +326,31 @@ export default function StoryDetail() {
             </div>
           </div>
 
-          {/* Cover Gambar */}
+          {/* Tombol Khusus Penulis (Hanya muncul jika sudah login) */}
+          {isLoggedIn && (
+            <div
+              className={`flex items-center gap-3 mb-8 -mt-4 pb-4 border-b ${currentTheme.border}`}
+            >
+              <span
+                className={`text-xs uppercase tracking-wider font-mono ${currentTheme.muted}`}
+              >
+                Aksi Creator:
+              </span>
+              <Link
+                to={`/write?edit=${slug}`}
+                className="text-xs px-3 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition font-sans"
+              >
+                Edit Naskah
+              </Link>
+              <button
+                onClick={handleDelete}
+                className="text-xs px-3 py-1.5 rounded-md border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition font-sans cursor-pointer"
+              >
+                Hapus Naskah
+              </button>
+            </div>
+          )}
+
           {story.coverImage && (
             <div className="mb-10 overflow-hidden rounded-sm">
               <img

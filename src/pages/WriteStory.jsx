@@ -1,46 +1,88 @@
 // src/pages/WriteStory.jsx
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, KeyRound, Loader2, Sparkles } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { getReadingStats } from "../utils/readingTime";
+import { auth } from "../utils/auth";
 
 export default function WriteStory() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editSlug = searchParams.get("edit");
+  const isEditMode = Boolean(editSlug);
+
+  const API_BASE_URL =
+    import.meta.env.VITE_API_URL || "https://api.katasurya.my.id/api";
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("Monolog");
   const [coverImage, setCoverImage] = useState("");
-  const [adminKey, setAdminKey] = useState(
-    localStorage.getItem("katasurya_key") || "",
-  );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [isLoadingStory, setIsLoadingStory] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const { wordCount, readTime } = getReadingStats(content);
 
-  const handlePublish = async () => {
+  // Ambil token login kreator
+  const token =
+    auth.getToken() || localStorage.getItem("katasurya_token") || "";
+
+  // Jika dalam Mode Edit, ambil naskah yang sudah ada
+  useEffect(() => {
+    if (!isEditMode) return;
+
+    setIsLoadingStory(true);
+    fetch(`${API_BASE_URL}/stories/${editSlug}`)
+      .then((res) => {
+        if (!res.ok)
+          throw new Error("Gagal mengambil data naskah untuk diedit.");
+        return res.json();
+      })
+      .then((data) => {
+        setTitle(data.title || "");
+        setContent(data.content || "");
+        setCategory(data.category || "Monolog");
+        setCoverImage(data.coverImage || "");
+      })
+      .catch((err) => {
+        setErrorMessage(err.message);
+      })
+      .finally(() => {
+        setIsLoadingStory(false);
+      });
+  }, [isEditMode, editSlug, API_BASE_URL]);
+
+  const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) {
-      alert("Judul dan isi cerita tidak boleh kosong!");
+      alert("Judul dan isi naskah tidak boleh kosong!");
       return;
     }
 
-    if (!adminKey) {
-      setShowKeyModal(true);
+    if (!token) {
+      alert("Sesi masuk tidak ditemukan. Harap login kembali.");
+      navigate("/login");
       return;
     }
 
     setIsSubmitting(true);
     setErrorMessage("");
 
+    // Tentukan endpoint & method: PUT jika edit, POST jika buat baru
+    const endpoint = isEditMode
+      ? `${API_BASE_URL}/stories/${editSlug}`
+      : `${API_BASE_URL}/stories`;
+    const method = isEditMode ? "PUT" : "POST";
+
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/stories", {
-        method: "POST",
+      const response = await fetch(endpoint, {
+        method,
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Key": localStorage.getItem("katasurya_token") || "",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+          "X-Admin-Key": token,
         },
         body: JSON.stringify({
           title,
@@ -53,21 +95,25 @@ export default function WriteStory() {
       const data = await response.json();
 
       if (!response.ok) {
-        if (response.status === 403) {
-          localStorage.removeItem("katasurya_key");
-          setShowKeyModal(true);
+        if (response.status === 401 || response.status === 403) {
+          auth.logout();
+          navigate("/login");
           throw new Error(
-            "Kunci Admin salah. Harap masukkan kunci yang sesuai.",
+            "Sesi telah habis atau otorisasi gagal. Silakan login kembali.",
           );
         }
-        throw new Error(data.message || "Gagal menerbitkan cerita.");
+        throw new Error(data.message || "Gagal menyimpan naskah.");
       }
 
-      // Simpan kunci admin jika berhasil
-      localStorage.setItem("katasurya_key", adminKey);
+      alert(
+        isEditMode
+          ? "Perubahan naskah berhasil disimpan."
+          : "Naskah berhasil diterbitkan!",
+      );
 
-      // Redirect langsung ke cerita yang baru diterbitkan
-      navigate(`/cerita/${data.data.slug}`);
+      // Arahkan ke halaman detail naskah
+      const targetSlug = isEditMode ? editSlug : data.data?.slug;
+      navigate(`/cerita/${targetSlug}`);
     } catch (err) {
       setErrorMessage(err.message);
     } finally {
@@ -75,39 +121,40 @@ export default function WriteStory() {
     }
   };
 
+  if (isLoadingStory) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-sm font-sans text-neutral-400">
+        <Loader2 className="animate-spin mr-2" size={16} /> Memuat naskah untuk
+        disunting...
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white text-proseText py-8 px-4">
       {/* Top Header Bar */}
       <div className="max-w-[800px] mx-auto flex items-center justify-between border-b border-proseBorder pb-4 mb-8">
         <Link
-          to="/"
+          to={isEditMode ? `/cerita/${editSlug}` : "/"}
           className="inline-flex items-center gap-1 text-xs font-sans text-proseMuted hover:text-proseText"
         >
           <ArrowLeft size={14} />
-          <span>Kembali ke draft</span>
+          <span>{isEditMode ? "Batal Edit" : "Kembali ke draft"}</span>
         </Link>
 
-        {/* Stats & Tombol Publish */}
+        {/* Stats & Tombol Publish / Save */}
         <div className="flex items-center gap-4">
           <div className="hidden sm:block text-xs font-sans text-proseMuted">
             {wordCount} kata · {readTime}
           </div>
 
           <button
-            onClick={() => setShowKeyModal(true)}
-            title="Ubah Kunci Admin"
-            className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-500"
-          >
-            <KeyRound size={16} />
-          </button>
-
-          <button
-            onClick={handlePublish}
+            onClick={handleSubmit}
             disabled={isSubmitting}
-            className="bg-[#1A8917] hover:bg-[#156f13] text-white px-4 py-1.5 rounded-full text-xs font-sans font-medium transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            className="bg-[#1A8917] hover:bg-[#156f13] text-white px-4 py-1.5 rounded-full text-xs font-sans font-medium transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
           >
             {isSubmitting && <Loader2 size={13} className="animate-spin" />}
-            <span>Publikasikan</span>
+            <span>{isEditMode ? "Simpan Perubahan" : "Publikasikan"}</span>
           </button>
         </div>
       </div>
@@ -119,9 +166,8 @@ export default function WriteStory() {
         </div>
       )}
 
-      {/* Editor Utama Bergaya Medium */}
+      {/* Editor Naskah */}
       <main className="max-w-[700px] mx-auto">
-        {/* Pengaturan Kategori & Cover (Metadata Bar) */}
         <div className="flex flex-wrap items-center gap-3 mb-8 p-3 bg-neutral-50 rounded-lg border border-neutral-150 text-xs font-sans">
           <div className="flex items-center gap-1.5 text-neutral-600">
             <Sparkles size={14} />
@@ -149,7 +195,7 @@ export default function WriteStory() {
           </div>
         </div>
 
-        {/* Input Judul (Medium Style: Tanpa Border, Font Besar) */}
+        {/* Input Judul */}
         <textarea
           rows={1}
           placeholder="Judul Cerita..."
@@ -158,53 +204,15 @@ export default function WriteStory() {
           className="w-full font-serif text-3xl md:text-5xl font-bold tracking-tight text-proseText placeholder:text-neutral-300 outline-none resize-none mb-6 border-none focus:ring-0 leading-tight"
         />
 
-        {/* Input Naskah Cerita */}
+        {/* Input Isi Naskah */}
         <textarea
           rows={18}
-          placeholder="Mulai tulis ceritamu di sini... (Mendukung format Markdown seperti *miring*, **tebal**, atau kutipan >)"
+          placeholder="Mulai tulis ceritamu di sini... (Mendukung format Markdown)"
           value={content}
           onChange={(e) => setContent(e.target.value)}
           className="w-full font-serif text-lg md:text-xl text-proseText placeholder:text-neutral-300 outline-none resize-y leading-[1.85] border-none focus:ring-0 min-h-[450px]"
         />
       </main>
-
-      {/* Modal Masukkan Kunci Rahasia Admin */}
-      {showKeyModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl border border-neutral-200">
-            <h3 className="font-serif text-lg font-bold mb-2">Kunci Penulis</h3>
-            <p className="font-sans text-xs text-proseMuted mb-4 leading-relaxed">
-              Masukkan kunci rahasia yang ditentukan di file <code>.env</code>{" "}
-              Laravel (<code>ADMIN_SECRET_KEY</code>) untuk memverifikasi bahwa
-              ini kamu.
-            </p>
-            <input
-              type="password"
-              placeholder="Masukkan secret key..."
-              value={adminKey}
-              onChange={(e) => setAdminKey(e.target.value)}
-              className="w-full border border-neutral-300 rounded px-3 py-2 text-sm font-sans outline-none focus:border-neutral-600 mb-4"
-            />
-            <div className="flex justify-end gap-2 text-xs font-sans">
-              <button
-                onClick={() => setShowKeyModal(false)}
-                className="px-3 py-1.5 rounded text-neutral-600 hover:bg-neutral-100"
-              >
-                Batal
-              </button>
-              <button
-                onClick={() => {
-                  localStorage.setItem("katasurya_key", adminKey);
-                  setShowKeyModal(false);
-                }}
-                className="px-4 py-1.5 rounded bg-neutral-900 text-white font-medium hover:bg-neutral-800"
-              >
-                Simpan Kunci
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
