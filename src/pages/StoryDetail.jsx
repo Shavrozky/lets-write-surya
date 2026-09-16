@@ -10,27 +10,61 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { auth } from "../utils/auth";
 import { deleteStory } from "../services/api";
 
+const authorAvatar = "/suryanata.jpg";
+
 export default function StoryDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const [story, setStory] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [actionModal, setActionModal] = useState(null);
   const contentRef = useRef(null);
 
   // Mengambil token via helper resmi auth.js
   const token = auth.getToken();
   const isLoggedIn = auth.isAuthenticated();
 
-  const handleDelete = async () => {
-    if (!window.confirm(`Yakin ingin menghapus naskah "${story?.title}"?`))
-      return;
+  const closeActionModal = () => {
+    const nextPath = actionModal?.nextPath;
+    setActionModal(null);
 
+    if (nextPath) {
+      navigate(nextPath);
+    }
+  };
+
+  const requestDelete = () => {
+    setActionModal({
+      tone: "danger",
+      eyebrow: "Konfirmasi hapus",
+      title: "Hapus naskah ini?",
+      message: `Naskah "${story?.title}" akan dihapus dari arsip dan tidak tampil lagi di halaman utama.`,
+      confirmLabel: "Ya, hapus",
+      cancelLabel: "Batal",
+      onConfirm: handleDelete,
+    });
+  };
+
+  const handleDelete = async () => {
     try {
+      setActionModal(null);
       await deleteStory(slug, token);
-      alert("Naskah berhasil dihapus.");
-      navigate("/");
+      setActionModal({
+        tone: "success",
+        eyebrow: "Naskah terhapus",
+        title: "Cerita berhasil dihapus.",
+        message: "Arsip sudah diperbarui. Kamu akan kembali ke halaman utama.",
+        confirmLabel: "Kembali ke beranda",
+        nextPath: "/",
+      });
     } catch (err) {
-      alert("Gagal menghapus naskah: " + err.message);
+      setActionModal({
+        tone: "danger",
+        eyebrow: "Gagal menghapus",
+        title: "Naskah belum berhasil dihapus.",
+        message: err.message,
+        confirmLabel: "Mengerti",
+      });
     }
   };
 
@@ -67,6 +101,7 @@ export default function StoryDetail() {
 
   const [readingTheme, setReadingTheme] = useState("light");
   const [fontSize, setFontSize] = useState("md");
+  const [textAlign, setTextAlign] = useState("left");
   const [toastMessage, setToastMessage] = useState("");
 
   // State untuk Tooltip Sorotan Teks (Quote Tooltip)
@@ -183,6 +218,12 @@ export default function StoryDetail() {
     lg: "text-[22px] md:text-[24px] leading-[1.9]",
   };
 
+  const textAlignments = {
+    left: "prose-p:text-left prose-li:text-left",
+    center: "prose-p:text-center prose-li:text-center",
+    right: "prose-p:text-right prose-li:text-right",
+  };
+
   return (
     <div
       onMouseUp={handleSelection}
@@ -195,7 +236,7 @@ export default function StoryDetail() {
       {tooltipPos && (
         <div
           style={{ top: `${tooltipPos.top}px`, left: `${tooltipPos.left}px` }}
-          className="absolute -translate-x-1/2 z-50 animate-fade-in"
+          className="absolute -translate-x-1/2 z-50 animate-fade-in max-w-[calc(100vw-2rem)]"
         >
           <button
             onClick={handleCopyQuote}
@@ -219,10 +260,10 @@ export default function StoryDetail() {
         <span>{toastMessage}</span>
       </div>
 
-      <article className="py-10 px-4 md:px-0">
+      <article className="py-7 sm:py-10 px-4 sm:px-5 md:px-0">
         <div className="max-w-[680px] mx-auto">
           {/* Top Control Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-10 pb-4 border-b border-dashed border-neutral-200/50">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 sm:mb-10 pb-4 border-b border-dashed border-neutral-200/50">
             <Link
               to="/"
               className={`inline-flex items-center gap-1.5 text-xs font-sans transition-colors ${currentTheme.muted} hover:${currentTheme.text}`}
@@ -231,26 +272,26 @@ export default function StoryDetail() {
               <span>Kembali</span>
             </Link>
 
-            <div className="flex items-center gap-2">
+            <div className="flex w-full sm:w-auto items-center gap-2 overflow-x-auto pb-1 sm:pb-0 -mx-1 px-1">
               {/* Ukuran Font */}
               <div
                 className={`flex items-center border rounded-full p-0.5 text-xs font-sans ${currentTheme.controlBg}`}
               >
                 <button
                   onClick={() => setFontSize("sm")}
-                  className={`px-2 py-0.5 rounded-full ${fontSize === "sm" ? currentTheme.activeBtn : ""}`}
+                  className={`px-2 py-1 sm:py-0.5 rounded-full ${fontSize === "sm" ? currentTheme.activeBtn : ""}`}
                 >
                   A⁻
                 </button>
                 <button
                   onClick={() => setFontSize("md")}
-                  className={`px-2 py-0.5 rounded-full ${fontSize === "md" ? currentTheme.activeBtn : ""}`}
+                  className={`px-2 py-1 sm:py-0.5 rounded-full ${fontSize === "md" ? currentTheme.activeBtn : ""}`}
                 >
                   A
                 </button>
                 <button
                   onClick={() => setFontSize("lg")}
-                  className={`px-2 py-0.5 rounded-full ${fontSize === "lg" ? currentTheme.activeBtn : ""}`}
+                  className={`px-2 py-1 sm:py-0.5 rounded-full ${fontSize === "lg" ? currentTheme.activeBtn : ""}`}
                 >
                   A⁺
                 </button>
@@ -262,28 +303,52 @@ export default function StoryDetail() {
               >
                 <button
                   onClick={() => setReadingTheme("light")}
-                  className={`px-2.5 py-0.5 rounded-full ${readingTheme === "light" ? currentTheme.activeBtn : ""}`}
+                  className={`px-2.5 py-1 sm:py-0.5 rounded-full ${readingTheme === "light" ? currentTheme.activeBtn : ""}`}
                 >
                   Putih
                 </button>
                 <button
                   onClick={() => setReadingTheme("paper")}
-                  className={`px-2.5 py-0.5 rounded-full ${readingTheme === "paper" ? currentTheme.activeBtn : ""}`}
+                  className={`px-2.5 py-1 sm:py-0.5 rounded-full ${readingTheme === "paper" ? currentTheme.activeBtn : ""}`}
                 >
                   Kertas
                 </button>
                 <button
                   onClick={() => setReadingTheme("dark")}
-                  className={`px-2.5 py-0.5 rounded-full ${readingTheme === "dark" ? currentTheme.activeBtn : ""}`}
+                  className={`px-2.5 py-1 sm:py-0.5 rounded-full ${readingTheme === "dark" ? currentTheme.activeBtn : ""}`}
                 >
                   Malam
+                </button>
+              </div>
+
+              {/* Perataan Teks */}
+              <div
+                className={`flex items-center border rounded-full p-0.5 text-xs font-sans ${currentTheme.controlBg}`}
+              >
+                <button
+                  onClick={() => setTextAlign("left")}
+                  className={`px-2.5 py-1 sm:py-0.5 rounded-full ${textAlign === "left" ? currentTheme.activeBtn : ""}`}
+                >
+                  Kiri
+                </button>
+                <button
+                  onClick={() => setTextAlign("center")}
+                  className={`px-2.5 py-1 sm:py-0.5 rounded-full ${textAlign === "center" ? currentTheme.activeBtn : ""}`}
+                >
+                  Tengah
+                </button>
+                <button
+                  onClick={() => setTextAlign("right")}
+                  className={`px-2.5 py-1 sm:py-0.5 rounded-full ${textAlign === "right" ? currentTheme.activeBtn : ""}`}
+                >
+                  Kanan
                 </button>
               </div>
 
               {/* Tombol Share */}
               <button
                 onClick={handleCopyLink}
-                className={`flex items-center gap-1 border rounded-full px-3 py-1 text-xs font-sans hover:scale-105 active:scale-95 ${currentTheme.controlBg}`}
+                className={`flex items-center gap-1 border rounded-full px-3 py-1.5 sm:py-1 text-xs font-sans hover:scale-105 active:scale-95 ${currentTheme.controlBg}`}
               >
                 <Share2 size={13} />
                 <span className="hidden sm:inline">Bagikan</span>
@@ -292,17 +357,17 @@ export default function StoryDetail() {
           </div>
 
           {/* Judul Cerita */}
-          <h1 className="font-serif text-3xl md:text-[44px] leading-[1.2] font-bold tracking-tight mb-6">
+          <h1 className="font-serif text-[32px] sm:text-[40px] md:text-[44px] leading-[1.18] sm:leading-[1.2] font-bold tracking-tight mb-6">
             {story.title}
           </h1>
 
           {/* Metadata Penulis */}
           <div
-            className={`flex items-center gap-3 pb-8 mb-8 border-b ${currentTheme.border} text-sm`}
+            className={`flex items-start sm:items-center gap-3 pb-7 sm:pb-8 mb-7 sm:mb-8 border-b ${currentTheme.border} text-sm`}
           >
             <div className="w-10 h-10 rounded-full bg-neutral-200 overflow-hidden flex-shrink-0">
               <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
+                src={authorAvatar}
                 alt="Surya"
                 className="w-full h-full object-cover"
               />
@@ -310,7 +375,7 @@ export default function StoryDetail() {
             <div>
               <div className="font-sans font-medium text-sm">Surya</div>
               <div
-                className={`font-sans text-xs flex flex-wrap items-center gap-1.5 mt-0.5 ${currentTheme.muted}`}
+                className={`font-sans text-xs flex flex-wrap items-center gap-x-1.5 gap-y-1 mt-0.5 ${currentTheme.muted}`}
               >
                 <span>{readTime}</span>
                 <span>({wordCount} kata)</span>
@@ -329,7 +394,7 @@ export default function StoryDetail() {
           {/* Tombol Khusus Penulis (Hanya muncul jika sudah login) */}
           {isLoggedIn && (
             <div
-              className={`flex items-center gap-3 mb-8 -mt-4 pb-4 border-b ${currentTheme.border}`}
+              className={`flex flex-wrap items-center gap-2 sm:gap-3 mb-8 -mt-4 pb-4 border-b ${currentTheme.border}`}
             >
               <span
                 className={`text-xs uppercase tracking-wider font-mono ${currentTheme.muted}`}
@@ -343,7 +408,7 @@ export default function StoryDetail() {
                 Edit Naskah
               </Link>
               <button
-                onClick={handleDelete}
+                onClick={requestDelete}
                 className="text-xs px-3 py-1.5 rounded-md border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition font-sans cursor-pointer"
               >
                 Hapus Naskah
@@ -369,7 +434,7 @@ export default function StoryDetail() {
           {/* Tubuh Cerita */}
           <div
             ref={contentRef}
-            className={`prose font-serif max-w-none prose-p:mb-7 selection:bg-neutral-200/70 dark:selection:bg-neutral-700 ${fontSizes[fontSize]}`}
+            className={`prose font-serif max-w-none prose-p:mb-6 sm:prose-p:mb-7 prose-img:rounded-sm break-words selection:bg-neutral-200/70 dark:selection:bg-neutral-700 ${fontSizes[fontSize]} ${textAlignments[textAlign]}`}
             style={{ color: "inherit" }}
           >
             <ReactMarkdown>{story.content}</ReactMarkdown>
@@ -377,7 +442,7 @@ export default function StoryDetail() {
 
           {/* Fitur Clap Button & Apresiasi */}
           <div
-            className={`my-12 py-6 border-y ${currentTheme.border} flex items-center justify-between`}
+            className={`my-10 sm:my-12 py-5 sm:py-6 border-y ${currentTheme.border} flex flex-col min-[420px]:flex-row min-[420px]:items-center justify-between gap-4`}
           >
             <div>
               <p className="font-sans text-xs font-medium mb-1">
@@ -395,7 +460,7 @@ export default function StoryDetail() {
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-full bg-neutral-200 overflow-hidden flex-shrink-0">
                 <img
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
+                  src={authorAvatar}
                   alt="Surya"
                   className="w-full h-full object-cover"
                 />
@@ -405,7 +470,7 @@ export default function StoryDetail() {
                   Ditulis oleh Surya
                 </h3>
                 <p
-                  className={`font-sans text-xs mt-1 leading-relaxed ${currentTheme.muted}`}
+                className={`font-sans text-xs mt-1 leading-relaxed break-words ${currentTheme.muted}`}
                 >
                   Ruang cerita dan monolog rasa. Untuk melihat rekayasa sistem
                   dan project teknis, kunjungi{" "}
@@ -426,8 +491,8 @@ export default function StoryDetail() {
           {/* Rekomendasi Cerita Lain */}
           {recommendedStories.length > 0 && (
             <section className={`mt-16 pt-10 border-t ${currentTheme.border}`}>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="font-serif text-xl font-bold tracking-tight">
+              <div className="flex items-start justify-between gap-4 mb-6">
+                <h2 className="font-serif text-lg sm:text-xl font-bold tracking-tight leading-snug">
                   Cerita Lainnya dari Surya
                 </h2>
                 <Link
@@ -473,6 +538,70 @@ export default function StoryDetail() {
           )}
         </div>
       </article>
+
+      {actionModal && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center px-4 py-8 font-sans">
+          <button
+            type="button"
+            aria-label="Tutup modal"
+            onClick={closeActionModal}
+            className="absolute inset-0 bg-neutral-950/45 backdrop-blur-sm"
+          />
+
+          <div className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/70 bg-white text-neutral-950 shadow-2xl">
+            <div
+              className={`absolute -right-14 -top-14 h-36 w-36 rounded-full blur-2xl ${
+                actionModal.tone === "success"
+                  ? "bg-emerald-200/70"
+                  : "bg-red-200/70"
+              }`}
+            />
+            <div className="absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-neutral-200 blur-2xl" />
+
+            <div className="relative p-6 sm:p-7">
+              <div
+                className={`mb-5 inline-flex rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] ${
+                  actionModal.tone === "success"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                    : "border-red-200 bg-red-50 text-red-700"
+                }`}
+              >
+                {actionModal.eyebrow}
+              </div>
+
+              <h2 className="font-serif text-3xl font-bold leading-tight">
+                {actionModal.title}
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-neutral-500">
+                {actionModal.message}
+              </p>
+
+              <div className="mt-7 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                {actionModal.cancelLabel && (
+                  <button
+                    type="button"
+                    onClick={() => setActionModal(null)}
+                    className="rounded-full border border-neutral-200 px-5 py-2.5 text-xs font-medium text-neutral-600 transition hover:border-neutral-400"
+                  >
+                    {actionModal.cancelLabel}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={actionModal.onConfirm || closeActionModal}
+                  className={`rounded-full px-5 py-2.5 text-xs font-medium text-white transition ${
+                    actionModal.tone === "danger"
+                      ? "bg-red-600 hover:bg-red-700"
+                      : "bg-neutral-950 hover:bg-neutral-800"
+                  }`}
+                >
+                  {actionModal.confirmLabel || "Mengerti"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

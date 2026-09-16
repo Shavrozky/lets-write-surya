@@ -3,12 +3,12 @@ import { ExternalLink } from "lucide-react";
 
 export default function About() {
   return (
-    <main className="max-w-[680px] mx-auto px-4 py-16">
-      <h1 className="font-serif text-3xl md:text-5xl font-bold tracking-tight text-proseText mb-8">
+    <main className="max-w-[680px] mx-auto px-4 sm:px-5 py-10 sm:py-16">
+      <h1 className="font-serif text-[34px] sm:text-5xl font-bold tracking-tight text-proseText mb-7 sm:mb-8 leading-tight">
         Tentang katasurya.
       </h1>
 
-      <div className="prose font-serif text-proseText leading-[1.85] text-[19px] md:text-[20px] max-w-none space-y-6">
+      <div className="prose font-serif text-proseText leading-[1.8] sm:leading-[1.85] text-[18px] sm:text-[20px] max-w-none space-y-5 sm:space-y-6">
         <p>
           Kadang-kadang, dunia terlalu bising untuk mendengar apa yang
           sebenarnya ingin kita sampaikan. Ada kalimat-kalimat yang tidak pernah
@@ -47,7 +47,7 @@ export default function About() {
             href="https://portfolio.katasurya.my.id"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 font-medium underline text-proseText hover:text-neutral-600 transition-colors"
+            className="inline-flex items-center gap-1.5 font-medium underline text-proseText hover:text-neutral-600 transition-colors break-words"
           >
             <span>Kunjungi portfolio.katasurya.my.id</span>
             <ExternalLink size={14} />

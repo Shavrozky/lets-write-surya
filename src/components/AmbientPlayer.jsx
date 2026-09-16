@@ -64,7 +64,9 @@ export default function AmbientPlayer() {
     if (noiseNodeRef.current) {
       try {
         noiseNodeRef.current.stop();
-      } catch (e) {}
+      } catch {
+        // Audio nodes may already be stopped when users tap quickly.
+      }
     }
     if (audioCtxRef.current) {
       audioCtxRef.current.close();
@@ -82,10 +84,10 @@ export default function AmbientPlayer() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-40">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40">
       <button
         onClick={toggleSound}
-        className={`flex items-center gap-2 px-3.5 py-2 rounded-full border shadow-md text-xs font-sans transition-all duration-300 backdrop-blur-md ${
+        className={`flex items-center gap-2 px-3 py-2 sm:px-3.5 rounded-full border shadow-md text-xs font-sans transition-all duration-300 backdrop-blur-md ${
           isPlaying
             ? "bg-neutral-900 text-white border-neutral-700 ring-2 ring-neutral-400/20"
             : "bg-white/90 text-neutral-600 border-neutral-200 hover:bg-neutral-50"

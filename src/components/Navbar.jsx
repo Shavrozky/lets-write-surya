@@ -14,8 +14,8 @@ export default function Navbar() {
   };
 
   return (
-    <header className="border-b border-proseBorder sticky top-0 bg-white/90 backdrop-blur-sm z-50">
-      <div className="max-w-[760px] mx-auto px-4 h-16 flex items-center justify-between">
+    <header className="border-b border-proseBorder sticky top-0 bg-white/95 backdrop-blur-sm z-50">
+      <div className="max-w-[760px] mx-auto px-4 py-3 sm:h-16 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Brand */}
         <Link
           to="/"
@@ -25,7 +25,7 @@ export default function Navbar() {
         </Link>
 
         {/* Nav Links */}
-        <nav className="flex items-center gap-5 text-sm font-sans text-proseMuted">
+        <nav className="w-full sm:w-auto flex items-center gap-2 sm:gap-5 overflow-x-auto whitespace-nowrap text-sm font-sans text-proseMuted -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 sm:pb-0">
           <Link
             to="/"
             className={`transition-colors ${location.pathname === "/" ? "text-proseText font-medium" : "hover:text-proseText"}`}
@@ -63,7 +63,7 @@ export default function Navbar() {
 
           {/* External Portfolio */}
           <a
-            href="https://portfolio.katasurya.my.id"
+            href="https://katasurya.my.id"
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-1.5 hover:text-proseText transition-colors text-xs font-medium bg-neutral-100 px-3 py-1.5 rounded-full"

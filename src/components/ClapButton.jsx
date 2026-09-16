@@ -1,7 +1,7 @@
 // src/components/ClapButton.jsx
 import { useState, useEffect } from "react";
 
-export default function ClapButton({ slug, theme = "light" }) {
+export default function ClapButton({ slug }) {
   const [claps, setClaps] = useState(28); // default base claps
   const [userClaps, setUserClaps] = useState(0);
   const [floatingBubbles, setFloatingBubbles] = useState([]);
@@ -36,10 +36,8 @@ export default function ClapButton({ slug, theme = "light" }) {
     }, 1000);
   };
 
-  const isDark = theme === "dark";
-
   return (
-    <div className="relative inline-flex items-center gap-3">
+    <div className="relative inline-flex flex-wrap items-center justify-end gap-2 sm:gap-3">
       {/* Floating +1 Animations */}
       <div className="absolute -top-10 left-3 pointer-events-none">
         {floatingBubbles.map((bubble) => (
@@ -62,21 +60,21 @@ export default function ClapButton({ slug, theme = "light" }) {
             ? "Batas maksimal tepukan tercapai (50)"
             : "Beri apresiasi (tepukan)"
         }
-        className={`group flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-200 active:scale-95 ${
+        className={`group flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-full border transition-all duration-200 active:scale-95 ${
           userClaps > 0
             ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900"
             : "border-neutral-300 hover:border-neutral-500 text-neutral-600 dark:text-neutral-300"
         }`}
       >
         {/* Ikon Tangan */}
-        <span className="text-lg group-hover:scale-125 transition-transform duration-200">
+        <span className="text-base sm:text-lg group-hover:scale-125 transition-transform duration-200">
           👏
         </span>
         <span className="font-sans text-xs font-semibold">{claps}</span>
       </button>
 
       {userClaps > 0 && (
-        <span className="text-[11px] font-sans opacity-60">
+        <span className="text-[10px] sm:text-[11px] font-sans opacity-60">
           ({userClaps} dari kamu)
         </span>
       )}

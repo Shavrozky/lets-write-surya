@@ -1,5 +1,10 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import StoryDetail from "./pages/StoryDetail";
@@ -9,30 +14,40 @@ import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AmbientPlayer from "./components/AmbientPlayer";
 
+function AnimatedRoutes() {
+  const location = useLocation();
+
+  return (
+    <div key={location.pathname} className="page-transition">
+      <Routes location={location}>
+        <Route path="/" element={<Home />} />
+        <Route path="/tentang" element={<About />} />
+        <Route path="/cerita/:slug" element={<StoryDetail />} />
+
+        {/* Rute Login Eksklusif */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Rute Write Terproteksi (Hanya Bisa Dibuka Jika Sudah Login) */}
+        <Route
+          path="/write"
+          element={
+            <ProtectedRoute>
+              <WriteStory />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <Router>
       <div className="min-h-screen bg-white text-proseText flex flex-col relative">
         <Navbar />
         <div className="flex-1">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/tentang" element={<About />} />
-            <Route path="/cerita/:slug" element={<StoryDetail />} />
-
-            {/* Rute Login Eksklusif */}
-            <Route path="/login" element={<Login />} />
-
-            {/* Rute Write Terproteksi (Hanya Bisa Dibuka Jika Sudah Login) */}
-            <Route
-              path="/write"
-              element={
-                <ProtectedRoute>
-                  <WriteStory />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
+          <AnimatedRoutes />
         </div>
         <AmbientPlayer />
       </div>

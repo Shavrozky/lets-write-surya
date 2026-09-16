@@ -48,7 +48,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center px-4">
+    <div className="min-h-[85vh] flex items-center justify-center px-4 py-10 sm:py-0">
       <div className="max-w-[380px] w-full">
         {/* Navigasi Balik ke Beranda */}
         <Link
@@ -64,7 +64,7 @@ export default function Login() {
           <div className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center mb-4 text-neutral-800">
             <Feather size={20} />
           </div>
-          <h1 className="font-serif text-3xl font-bold tracking-tight text-proseText">
+          <h1 className="font-serif text-[32px] sm:text-3xl font-bold tracking-tight text-proseText">
             Ruang Penulis
           </h1>
           <p className="font-sans text-xs text-proseMuted mt-1.5 leading-relaxed">
@@ -92,7 +92,7 @@ export default function Login() {
               placeholder="surya@katasurya.my.id"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-neutral-200 rounded-md outline-none focus:border-neutral-900 text-xs transition-colors"
+              className="w-full px-3 py-2.5 sm:py-2 border border-neutral-200 rounded-md outline-none focus:border-neutral-900 text-sm sm:text-xs transition-colors"
             />
           </div>
 
@@ -106,14 +106,14 @@ export default function Login() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-neutral-200 rounded-md outline-none focus:border-neutral-900 text-xs transition-colors"
+              className="w-full px-3 py-2.5 sm:py-2 border border-neutral-200 rounded-md outline-none focus:border-neutral-900 text-sm sm:text-xs transition-colors"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 bg-neutral-900 hover:bg-neutral-800 text-white py-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+            className="w-full mt-2 bg-neutral-900 hover:bg-neutral-800 text-white py-2.5 sm:py-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
           >
             {loading ? (
               <Loader2 size={14} className="animate-spin" />
