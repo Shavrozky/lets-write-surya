@@ -10,7 +10,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { auth } from "../utils/auth";
 import { deleteStory } from "../services/api";
 
-const authorAvatar = "/suryanata.jpg";
+const authorAvatar = "/nata.jpg";
 
 export default function StoryDetail() {
   const { slug } = useParams();
@@ -470,7 +470,7 @@ export default function StoryDetail() {
                   Ditulis oleh Surya
                 </h3>
                 <p
-                className={`font-sans text-xs mt-1 leading-relaxed break-words ${currentTheme.muted}`}
+                  className={`font-sans text-xs mt-1 leading-relaxed break-words ${currentTheme.muted}`}
                 >
                   Ruang cerita dan monolog rasa. Untuk melihat rekayasa sistem
                   dan project teknis, kunjungi{" "}

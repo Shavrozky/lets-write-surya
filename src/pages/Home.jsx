@@ -51,7 +51,10 @@ export default function Home() {
     pageStartIndex + pageSize,
   );
   const visibleStart = filteredStories.length === 0 ? 0 : pageStartIndex + 1;
-  const visibleEnd = Math.min(pageStartIndex + pageSize, filteredStories.length);
+  const visibleEnd = Math.min(
+    pageStartIndex + pageSize,
+    filteredStories.length,
+  );
 
   const handleCategoryChange = (category) => {
     setActiveCategory(category);
@@ -72,7 +75,7 @@ export default function Home() {
     <main className="max-w-[760px] mx-auto px-4 sm:px-5 py-8 sm:py-12">
       <section className="mb-8 sm:mb-10 pb-6 sm:pb-8 border-b border-proseBorder">
         <h1 className="font-serif text-[34px] sm:text-4xl font-bold tracking-tight text-proseText mb-2">
-          Surya
+          Aksara Surya
         </h1>
         <p className="font-serif text-proseMuted text-[17px] sm:text-lg leading-relaxed max-w-[580px]">
           Ruang catatan, fiksi reflektif, dan rekam pikiran. Tulisan-tulisan
@@ -194,7 +197,6 @@ export default function Home() {
           </div>
         </nav>
       )}
-
     </main>
   );
 }
