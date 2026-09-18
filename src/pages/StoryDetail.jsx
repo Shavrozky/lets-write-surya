@@ -9,12 +9,37 @@ import { getReadingStats } from "../utils/readingTime";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { auth } from "../utils/auth";
 import { deleteStory } from "../services/api";
+import { getAvatarUrl } from "../creator/services/communityApi";
+import { useCommunityAuth } from "../creator/context/CommunityAuthContext";
 
-const authorAvatar = "/nata.jpg";
+const SURYA_DEFAULT_AVATAR = "/suryanata.jpg";
+
+function AuthorAvatar({ avatarUrl, authorName, authorInitial, size = "md" }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const sizeClass = size === "lg" ? "h-12 w-12 text-sm" : "h-10 w-10 text-xs";
+
+  return (
+    <div
+      className={`flex ${sizeClass} flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-900 font-sans font-semibold text-white`}
+    >
+      {avatarUrl && !imageFailed ? (
+        <img
+          src={avatarUrl}
+          alt={authorName}
+          className="h-full w-full object-cover"
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        authorInitial
+      )}
+    </div>
+  );
+}
 
 export default function StoryDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { user } = useCommunityAuth();
   const [story, setStory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionModal, setActionModal] = useState(null);
@@ -168,6 +193,17 @@ export default function StoryDetail() {
 
   const { wordCount, readTime } = getReadingStats(story.content || "");
   const recommendedStories = stories.filter((s) => s.slug !== slug).slice(0, 2);
+  const authorName =
+    story.author?.pen_name || story.author?.name || story.author || "Surya";
+  const isSuryaStory = authorName.toLowerCase() === "surya";
+  const loggedInName = user?.pen_name || user?.name || "";
+  const loggedInIsSurya = loggedInName.toLowerCase() === "surya";
+  const authorAvatar = getAvatarUrl(
+    story.author?.avatar ||
+      (isSuryaStory && loggedInIsSurya ? user?.avatar : null) ||
+      (isSuryaStory ? SURYA_DEFAULT_AVATAR : null),
+  );
+  const authorInitial = authorName.charAt(0).toUpperCase() || "S";
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -365,22 +401,20 @@ export default function StoryDetail() {
           <div
             className={`flex items-start sm:items-center gap-3 pb-7 sm:pb-8 mb-7 sm:mb-8 border-b ${currentTheme.border} text-sm`}
           >
-            <div className="w-10 h-10 rounded-full bg-neutral-200 overflow-hidden flex-shrink-0">
-              <img
-                src={authorAvatar}
-                alt="Surya"
-                className="w-full h-full object-cover"
-              />
-            </div>
+            <AuthorAvatar
+              avatarUrl={authorAvatar}
+              authorName={authorName}
+              authorInitial={authorInitial}
+            />
             <div>
-              <div className="font-sans font-medium text-sm">Surya</div>
+              <div className="font-sans font-medium text-sm">{authorName}</div>
               <div
                 className={`font-sans text-xs flex flex-wrap items-center gap-x-1.5 gap-y-1 mt-0.5 ${currentTheme.muted}`}
               >
+                <span>{story.date}</span>
+                <span>·</span>
                 <span>{readTime}</span>
                 <span>({wordCount} kata)</span>
-                <span>·</span>
-                <span>{story.date}</span>
                 <span>·</span>
                 <span
                   className={`px-2 py-0.5 rounded text-[10px] ${currentTheme.badge}`}
@@ -458,16 +492,15 @@ export default function StoryDetail() {
           {/* Bio Singkat Penulis */}
           <div className={`pt-6 border-t ${currentTheme.border}`}>
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-full bg-neutral-200 overflow-hidden flex-shrink-0">
-                <img
-                  src={authorAvatar}
-                  alt="Surya"
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              <AuthorAvatar
+                avatarUrl={authorAvatar}
+                authorName={authorName}
+                authorInitial={authorInitial}
+                size="lg"
+              />
               <div>
                 <h3 className="font-sans font-semibold text-sm">
-                  Ditulis oleh Surya
+                  Ditulis oleh {authorName}
                 </h3>
                 <p
                   className={`font-sans text-xs mt-1 leading-relaxed break-words ${currentTheme.muted}`}

@@ -72,10 +72,10 @@ export default function Home() {
   };
 
   return (
-    <main className="max-w-[760px] mx-auto px-4 sm:px-5 py-8 sm:py-12">
+    <main className="mx-auto w-full max-w-3xl py-4 sm:py-8">
       <section className="mb-8 sm:mb-10 pb-6 sm:pb-8 border-b border-proseBorder">
         <h1 className="font-serif text-[34px] sm:text-4xl font-bold tracking-tight text-proseText mb-2">
-          Aksara Surya
+          Aksara Kita
         </h1>
         <p className="font-serif text-proseMuted text-[17px] sm:text-lg leading-relaxed max-w-[580px]">
           Ruang catatan, fiksi reflektif, dan rekam pikiran. Tulisan-tulisan

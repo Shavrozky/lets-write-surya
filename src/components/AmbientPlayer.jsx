@@ -1,12 +1,49 @@
 // src/components/AmbientPlayer.jsx
 import { useState, useRef } from "react";
-import { Volume2, VolumeX, CloudRain } from "lucide-react";
+import { CloudRain, Music2, Volume2, VolumeX } from "lucide-react";
+
+const soundOptions = [
+  {
+    id: "rain",
+    label: "Hujan Malam",
+    description: "Rintik hujan sintetis yang lembut",
+    type: "generated",
+  },
+  {
+    id: "lofi",
+    label: "Lo-fi Sunyi",
+    description: "Letakkan file di public/audio/lofi.mp3",
+    type: "file",
+    src: "/audio/lofi.mp3",
+  },
+  {
+    id: "piano",
+    label: "Piano Pelan",
+    description: "Letakkan file di public/audio/piano.mp3",
+    type: "file",
+    src: "/audio/piano.mp3",
+  },
+  {
+    id: "ambient",
+    label: "Ambient Fokus",
+    description: "Letakkan file di public/audio/ambient.mp3",
+    type: "file",
+    src: "/audio/ambient.mp3",
+  },
+];
 
 export default function AmbientPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [selectedSoundId, setSelectedSoundId] = useState("rain");
+  const [errorMessage, setErrorMessage] = useState("");
   const audioCtxRef = useRef(null);
   const gainNodeRef = useRef(null);
   const noiseNodeRef = useRef(null);
+  const audioRef = useRef(null);
+
+  const selectedSound =
+    soundOptions.find((option) => option.id === selectedSoundId) ||
+    soundOptions[0];
 
   const startRainAudio = () => {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -60,6 +97,22 @@ export default function AmbientPlayer() {
     gainNodeRef.current = gainNode;
   };
 
+  const startFileAudio = async (sound) => {
+    const audio = new Audio(sound.src);
+    audio.loop = true;
+    audio.volume = 0.45;
+    audioRef.current = audio;
+
+    try {
+      await audio.play();
+    } catch {
+      audioRef.current = null;
+      throw new Error(
+        `File ${sound.src} belum tersedia atau browser memblokir pemutaran.`,
+      );
+    }
+  };
+
   const stopAudio = () => {
     if (noiseNodeRef.current) {
       try {
@@ -71,46 +124,127 @@ export default function AmbientPlayer() {
     if (audioCtxRef.current) {
       audioCtxRef.current.close();
     }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+
+    noiseNodeRef.current = null;
+    audioCtxRef.current = null;
   };
 
-  const toggleSound = () => {
-    if (!isPlaying) {
+  const startSelectedSound = async () => {
+    setErrorMessage("");
+
+    if (selectedSound.type === "generated") {
       startRainAudio();
-      setIsPlaying(true);
+      return;
+    }
+
+    await startFileAudio(selectedSound);
+  };
+
+  const toggleSound = async () => {
+    if (!isPlaying) {
+      try {
+        await startSelectedSound();
+        setIsPlaying(true);
+      } catch (err) {
+        stopAudio();
+        setErrorMessage(err.message);
+        setIsPlaying(false);
+      }
     } else {
       stopAudio();
       setIsPlaying(false);
     }
   };
 
+  const handleSoundChange = async (event) => {
+    const nextSoundId = event.target.value;
+
+    setSelectedSoundId(nextSoundId);
+    setErrorMessage("");
+
+    if (!isPlaying) return;
+
+    stopAudio();
+    setIsPlaying(false);
+
+    const nextSound = soundOptions.find((option) => option.id === nextSoundId);
+
+    try {
+      if (nextSound.type === "generated") {
+        startRainAudio();
+      } else {
+        await startFileAudio(nextSound);
+      }
+      setIsPlaying(true);
+    } catch (err) {
+      stopAudio();
+      setErrorMessage(err.message);
+    }
+  };
+
   return (
-    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40">
-      <button
-        onClick={toggleSound}
-        className={`flex items-center gap-2 px-3 py-2 sm:px-3.5 rounded-full border shadow-md text-xs font-sans transition-all duration-300 backdrop-blur-md ${
-          isPlaying
-            ? "bg-neutral-900 text-white border-neutral-700 ring-2 ring-neutral-400/20"
-            : "bg-white/90 text-neutral-600 border-neutral-200 hover:bg-neutral-50"
-        }`}
-        title={
-          isPlaying ? "Hentikan Suara Ambience" : "Putar Ambience Hujan Malam"
-        }
-      >
-        <CloudRain
-          size={14}
-          className={
-            isPlaying ? "text-cyan-300 animate-pulse" : "text-neutral-400"
-          }
-        />
-        <span className="font-medium hidden sm:inline">
-          {isPlaying ? "Hujan Malam Aktif" : "Suara Latar"}
-        </span>
-        {isPlaying ? (
-          <Volume2 size={13} />
-        ) : (
-          <VolumeX size={13} className="text-neutral-400" />
-        )}
-      </button>
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 font-sans">
+      <div className="w-[min(calc(100vw-2rem),360px)] rounded-2xl border border-neutral-200 bg-white/90 p-2 shadow-lg backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          <label className="flex min-w-0 flex-1 items-center gap-2 rounded-full bg-neutral-50 px-3 py-2 text-xs text-neutral-600 ring-1 ring-neutral-200">
+            <Music2 size={13} className="shrink-0 text-neutral-400" />
+            <select
+              value={selectedSoundId}
+              onChange={handleSoundChange}
+              className="min-w-0 flex-1 bg-transparent text-xs font-medium text-neutral-700 outline-none"
+            >
+              {soundOptions.map((sound) => (
+                <option key={sound.id} value={sound.id}>
+                  {sound.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <button
+            onClick={toggleSound}
+            className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs shadow-sm transition-all duration-300 ${
+              isPlaying
+                ? "border-neutral-800 bg-neutral-900 text-white ring-2 ring-neutral-400/20"
+                : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
+            }`}
+            title={isPlaying ? "Hentikan backsound" : "Putar backsound"}
+          >
+            {selectedSoundId === "rain" ? (
+              <CloudRain
+                size={14}
+                className={
+                  isPlaying ? "text-cyan-300 animate-pulse" : "text-neutral-400"
+                }
+              />
+            ) : (
+              <Music2
+                size={14}
+                className={
+                  isPlaying ? "text-amber-200 animate-pulse" : "text-neutral-400"
+                }
+              />
+            )}
+            <span className="hidden font-medium sm:inline">
+              {isPlaying ? "Aktif" : "Putar"}
+            </span>
+            {isPlaying ? (
+              <Volume2 size={13} />
+            ) : (
+              <VolumeX size={13} className="text-neutral-400" />
+            )}
+          </button>
+        </div>
+
+        <div className="px-2 pb-1 pt-2 text-[11px] leading-relaxed text-neutral-400">
+          {errorMessage || selectedSound.description}
+        </div>
+      </div>
     </div>
   );
 }
