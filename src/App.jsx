@@ -18,9 +18,11 @@ import AmbientPlayer from "./components/AmbientPlayer";
 import CreatorLayout from "./creator/CreatorLayout";
 import CreatorFeed from "./creator/pages/CreatorFeed";
 import CreatorAuth from "./creator/pages/CreatorAuth";
+import CreatorGoogleCallback from "./creator/pages/CreatorGoogleCallback";
 import CreatorStories from "./creator/pages/CreatorStories";
 import CreatorStoryDetail from "./creator/pages/CreatorStoryDetail";
 import CreatorAdmin from "./creator/pages/CreatorAdmin";
+import CreatorAdminUsers from "./creator/pages/CreatorAdminUsers";
 import CreatorProfile from "./creator/pages/CreatorProfile";
 import { CommunityAuthProvider } from "./creator/context/CommunityAuthContext";
 
@@ -68,10 +70,12 @@ function AnimatedRoutes() {
             }
           />
           <Route path="auth" element={<CreatorAuth />} />
+          <Route path="auth/google/callback" element={<CreatorGoogleCallback />} />
           <Route path="profile" element={<CreatorProfile />} />
           <Route path="stories" element={<CreatorStories />} />
           <Route path="stories/:id" element={<CreatorStoryDetail />} />
           <Route path="admin" element={<CreatorAdmin />} />
+          <Route path="admin/users" element={<CreatorAdminUsers />} />
         </Route>
       </Routes>
     </div>
@@ -84,15 +88,23 @@ function AppFrame() {
     location.pathname.startsWith("/cerita/") ||
     location.pathname.startsWith("/creator/stories/");
 
+  if (isReaderRoute) {
+    return (
+      <CommunityAuthProvider>
+        <div className="min-h-screen bg-neutral-100/60 text-neutral-950">
+          <Navbar />
+          <AnimatedRoutes />
+        </div>
+        <AmbientPlayer />
+      </CommunityAuthProvider>
+    );
+  }
+
   return (
     <CommunityAuthProvider>
       <div className="min-h-screen bg-white text-neutral-950">
         <Navbar />
-        <div
-          className={`mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-5 lg:px-6 ${
-            isReaderRoute ? "md:grid-cols-[220px_minmax(0,1fr)]" : "md:grid-cols-[220px_minmax(0,1fr)]"
-          }`}
-        >
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-5 lg:px-6 md:grid-cols-[220px_minmax(0,1fr)]">
           <AppSidebar />
           <main className="min-w-0">
             <AnimatedRoutes />

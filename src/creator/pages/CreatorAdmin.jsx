@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { communityApi } from "../services/communityApi";
 import { useCommunityAuth } from "../context/CommunityAuthContext";
+import FeedbackModal from "../components/FeedbackModal";
 
 export default function CreatorAdmin() {
   const navigate = useNavigate();
@@ -9,6 +10,7 @@ export default function CreatorAdmin() {
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [feedback, setFeedback] = useState(null);
 
   const loadStories = () => {
     setLoading(true);
@@ -38,19 +40,28 @@ export default function CreatorAdmin() {
     loadStories();
   }, [isAuthenticated, isLoading, navigate, user?.role]);
 
-  const runAction = async (action) => {
+  const runAction = async (action, successFeedback) => {
     setErrorMessage("");
 
     try {
       await action();
+      setFeedback(successFeedback);
       loadStories();
     } catch (err) {
       setErrorMessage(err.message);
+      setFeedback({
+        tone: "danger",
+        eyebrow: "Aksi gagal",
+        title: "Perubahan belum berhasil diproses.",
+        message: err.message,
+      });
     }
   };
 
   return (
     <div className="rounded-[28px] border border-neutral-200 bg-white p-5 shadow-sm md:p-8">
+      <FeedbackModal feedback={feedback} onClose={() => setFeedback(null)} />
+
       <div className="mb-6 border-b border-neutral-100 pb-5">
         <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">
           Moderasi Komunitas
@@ -112,9 +123,29 @@ export default function CreatorAdmin() {
               </span>
 
               <div className="flex flex-wrap gap-2">
+                {story.status === "draft" && (
+                  <button
+                    onClick={() =>
+                      runAction(() => communityApi.publishAdminStory(story.id), {
+                        tone: "success",
+                        eyebrow: "Cerita terbit",
+                        title: "Cerita berhasil dipublikasikan.",
+                        message: `"${story.title}" sekarang tampil untuk pembaca.`,
+                      })
+                    }
+                    className="rounded-full border border-emerald-600 px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50"
+                  >
+                    Publikasikan
+                  </button>
+                )}
                 <button
                   onClick={() =>
-                    runAction(() => communityApi.hideAdminStory(story.id))
+                    runAction(() => communityApi.hideAdminStory(story.id), {
+                      tone: "success",
+                      eyebrow: "Cerita disembunyikan",
+                      title: "Cerita berhasil disembunyikan.",
+                      message: `"${story.title}" tidak lagi tampil untuk pembaca.`,
+                    })
                   }
                   className="rounded-full border border-neutral-200 px-3 py-1.5 text-xs text-neutral-600 hover:border-neutral-400"
                 >
@@ -122,7 +153,12 @@ export default function CreatorAdmin() {
                 </button>
                 <button
                   onClick={() =>
-                    runAction(() => communityApi.deleteAdminStory(story.id))
+                    runAction(() => communityApi.deleteAdminStory(story.id), {
+                      tone: "success",
+                      eyebrow: "Cerita terhapus",
+                      title: "Cerita berhasil dihapus.",
+                      message: `"${story.title}" sudah dihapus dari komunitas.`,
+                    })
                   }
                   className="rounded-full border border-red-200 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50"
                 >
@@ -131,7 +167,15 @@ export default function CreatorAdmin() {
                 {story.author?.id && !story.author?.is_banned && (
                   <button
                     onClick={() =>
-                      runAction(() => communityApi.banAdminUser(story.author.id))
+                      runAction(() =>
+                        communityApi.banAdminUser(story.author.id),
+                        {
+                          tone: "success",
+                          eyebrow: "Akun dibatasi",
+                          title: "Akun berhasil di-ban.",
+                          message: `${story.author?.pen_name || story.author?.name || "Penulis"} tidak dapat menerbitkan cerita baru.`,
+                        },
+                      )
                     }
                     className="rounded-full border border-amber-200 px-3 py-1.5 text-xs text-amber-700 hover:bg-amber-50"
                   >
@@ -141,6 +185,7 @@ export default function CreatorAdmin() {
               </div>
             </article>
           ))}
+
         </div>
       )}
     </div>

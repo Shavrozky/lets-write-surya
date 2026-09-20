@@ -29,6 +29,7 @@ function AuthorAvatar({ avatarUrl, authorName, authorInitial }) {
 export default function StoryCard({ story }) {
   const { user } = useCommunityAuth();
   const { readTime } = getReadingStats(story.content);
+  const detailPath = story.detailPath || `/cerita/${story.slug}`;
   const authorName =
     story.author?.pen_name || story.author?.name || story.author || "Surya";
   const isSuryaStory = authorName.toLowerCase() === "surya";
@@ -44,7 +45,6 @@ export default function StoryCard({ story }) {
   return (
     <article className="py-6 sm:py-7 border-b border-proseBorder flex items-start justify-between gap-4 sm:gap-6 group">
       <div className="min-w-0 flex-1">
-        {/* Meta Dinamis */}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] sm:text-xs font-sans text-proseMuted mb-2">
           <span className="inline-flex items-center gap-1.5 text-neutral-900">
             <AuthorAvatar
@@ -64,22 +64,19 @@ export default function StoryCard({ story }) {
           </span>
         </div>
 
-        {/* Title */}
-        <Link to={`/cerita/${story.slug}`}>
+        <Link to={detailPath}>
           <h2 className="font-serif font-bold text-[21px] sm:text-2xl text-proseText group-hover:text-neutral-600 transition-colors leading-snug mb-2">
             {story.title}
           </h2>
         </Link>
 
-        {/* Excerpt */}
         <p className="font-serif text-proseMuted text-[15px] sm:text-base line-clamp-3 sm:line-clamp-2 leading-relaxed mb-3">
           {story.excerpt}
         </p>
       </div>
 
-      {/* Thumbnail */}
       {story.coverImage && (
-        <Link to={`/cerita/${story.slug}`} className="flex-shrink-0">
+        <Link to={detailPath} className="flex-shrink-0">
           <div className="w-20 h-20 min-[380px]:w-24 min-[380px]:h-24 sm:w-32 sm:h-28 rounded-sm overflow-hidden bg-neutral-100">
             <img
               src={story.coverImage}

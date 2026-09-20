@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import CreatorStoryCard from "../components/CreatorStoryCard";
 import EditProfileModal from "../components/EditProfileModal";
+import FeedbackModal from "../components/FeedbackModal";
 import { useCommunityAuth } from "../context/CommunityAuthContext";
 import { communityApi, getAvatarUrl } from "../services/communityApi";
 
@@ -22,6 +23,7 @@ export default function CreatorProfile() {
   const [loadingStories, setLoadingStories] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [feedback, setFeedback] = useState(null);
 
   useEffect(() => {
     if (isLoading) return;
@@ -75,10 +77,18 @@ export default function CreatorProfile() {
   const handleSaveProfile = async (payload) => {
     const data = await communityApi.updateProfile(payload);
     updateUser(data.user);
+    setFeedback({
+      tone: "success",
+      eyebrow: "Profil diperbarui",
+      title: "Profil berhasil disimpan.",
+      message: "Perubahan profilmu sudah tersimpan dan tampil untuk pembaca.",
+    });
   };
 
   return (
     <>
+      <FeedbackModal feedback={feedback} onClose={() => setFeedback(null)} />
+
       <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="min-w-0 border-neutral-200 lg:border-r lg:pr-10">
           <header className="border-b border-neutral-200 pb-5">

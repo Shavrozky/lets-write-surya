@@ -16,7 +16,7 @@ export default function ClapButton({ slug }) {
   }, [slug]);
 
   const handleClap = () => {
-    if (userClaps >= 50) return; // batas maksimal 50 tepukan per orang
+    if (userClaps >= 50) return;
 
     const newClaps = claps + 1;
     const newUserClaps = userClaps + 1;

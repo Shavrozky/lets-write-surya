@@ -1,7 +1,14 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "https://api.katasurya.my.id/api";
+const normalizeLocalApiUrl = (url) =>
+  url?.replace("http://127.0.0.1:8000", "http://localhost:8000");
+
+const API_BASE_URL = normalizeLocalApiUrl(
+  import.meta.env.VITE_API_URL || "https://api.katasurya.my.id/api",
+);
 
 const getToken = () => localStorage.getItem("community_token");
+
+export const getGoogleOAuthRedirectUrl = () =>
+  `${API_BASE_URL}/community/auth/google/redirect`;
 
 export function getAvatarUrl(avatarPath) {
   if (!avatarPath) return null;
@@ -15,6 +22,7 @@ export function getAvatarUrl(avatarPath) {
 const request = async (path, options = {}) => {
   const token = getToken();
   const isFormData = options.body instanceof FormData;
+  const url = `${API_BASE_URL}${path}`;
   const headers = {
     Accept: "application/json",
     ...(options.body && !isFormData ? { "Content-Type": "application/json" } : {}),
@@ -22,12 +30,27 @@ const request = async (path, options = {}) => {
     ...options.headers,
   };
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  console.log("[communityApi] request", {
+    url,
+    method: options.method || "GET",
+    hasToken: Boolean(token),
+    isFormData,
+    body: isFormData ? "[FormData]" : options.body || null,
+  });
+
+  const response = await fetch(url, {
     ...options,
     headers,
   });
 
   const data = await response.json().catch(() => ({}));
+
+  console.log("[communityApi] response", {
+    url,
+    status: response.status,
+    ok: response.ok,
+    data,
+  });
 
   if (!response.ok) {
     const message =
@@ -53,6 +76,12 @@ export const communityApi = {
       body: JSON.stringify(payload),
     }),
 
+  updateStory: (id, payload) =>
+    request(`/community/stories/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+
   register: (data) =>
     request("/community/auth/register", {
       method: "POST",
@@ -63,6 +92,12 @@ export const communityApi = {
     request("/community/auth/login", {
       method: "POST",
       body: JSON.stringify(credentials),
+    }),
+
+  exchangeGoogleCode: (code) =>
+    request(`/community/auth/google/exchange?code=${encodeURIComponent(code)}`, {
+      method: "POST",
+      body: JSON.stringify({ code }),
     }),
 
   getMe: () => request("/community/auth/me"),
@@ -86,8 +121,13 @@ export const communityApi = {
 
   getAdminStories: () => request("/community/admin/stories"),
 
+  getAdminUsers: () => request("/community/admin/users"),
+
   hideAdminStory: (id) =>
     request(`/community/admin/stories/${id}/hide`, { method: "PATCH" }),
+
+  publishAdminStory: (id) =>
+    request(`/community/admin/stories/${id}/publish`, { method: "PATCH" }),
 
   deleteAdminStory: (id) =>
     request(`/community/admin/stories/${id}`, { method: "DELETE" }),

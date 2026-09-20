@@ -2,8 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { stories } from "../data/stories";
 import ReactMarkdown from "react-markdown";
-import { ArrowLeft, Share2, Check, Quote } from "lucide-react";
-import ReadingProgressBar from "../components/ReadingProgressBar";
+import { Check, Edit3, Quote, Share2 } from "lucide-react";
 import ClapButton from "../components/ClapButton";
 import { getReadingStats } from "../utils/readingTime";
 import { useParams, Link, useNavigate } from "react-router-dom";
@@ -124,10 +123,10 @@ export default function StoryDetail() {
       });
   }, [slug, API_BASE_URL]);
 
+  const [toastMessage, setToastMessage] = useState("");
   const [readingTheme, setReadingTheme] = useState("light");
   const [fontSize, setFontSize] = useState("md");
   const [textAlign, setTextAlign] = useState("left");
-  const [toastMessage, setToastMessage] = useState("");
 
   // State untuk Tooltip Sorotan Teks (Quote Tooltip)
   const [selectedQuote, setSelectedQuote] = useState("");
@@ -170,6 +169,20 @@ export default function StoryDetail() {
     showToast("Kutipan berhasil disalin dengan rapi");
   };
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+
+    navigate("/");
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    showToast("Tautan cerita berhasil disalin");
+  };
+
   // 1. Tampilan saat proses loading data berlangsung
   if (loading) {
     return (
@@ -191,7 +204,7 @@ export default function StoryDetail() {
     );
   }
 
-  const { wordCount, readTime } = getReadingStats(story.content || "");
+  const { readTime } = getReadingStats(story.content || "");
   const recommendedStories = stories.filter((s) => s.slug !== slug).slice(0, 2);
   const authorName =
     story.author?.pen_name || story.author?.name || story.author || "Surya";
@@ -204,70 +217,68 @@ export default function StoryDetail() {
       (isSuryaStory ? SURYA_DEFAULT_AVATAR : null),
   );
   const authorInitial = authorName.charAt(0).toUpperCase() || "S";
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    showToast("Tautan cerita berhasil disalin");
-  };
+  const isAdmin = user?.role === "admin";
+  const isOwner = Boolean(
+    user?.id &&
+      (story.author_id === user.id ||
+        story.author?.id === user.id ||
+        story.user_id === user.id),
+  );
+  const canEditStory = Boolean(story.id && (isAdmin || isOwner));
 
   const themeStyles = {
     light: {
       bg: "bg-white",
-      text: "text-[#242424]",
+      text: "text-neutral-900",
       muted: "text-neutral-500",
       border: "border-neutral-150",
-      badge: "bg-neutral-100 text-neutral-600",
       cardBg: "bg-neutral-50/70 border-neutral-200/60 hover:border-neutral-300",
-      progress: "bg-neutral-800",
-      controlBg: "bg-white border-neutral-200 text-neutral-600",
-      activeBtn: "bg-neutral-100 text-neutral-900 font-semibold",
+      active: "bg-neutral-100 font-semibold text-neutral-900",
     },
     paper: {
-      bg: "bg-[#FAF6EF]",
-      text: "text-[#2C2724]",
-      muted: "text-[#786E65]",
-      border: "border-[#E8DFD3]",
-      badge: "bg-[#EFE8DC] text-[#5C534B]",
-      cardBg: "bg-[#F3EDE3] border-[#E2D7C7] hover:border-[#D5C8B4]",
-      progress: "bg-[#5C534B]",
-      controlBg: "bg-[#F5EFE4] border-[#E2D7C7] text-[#5C534B]",
-      activeBtn: "bg-[#EAE2D3] text-[#2C2724] font-semibold",
+      bg: "bg-[#fbf7ee]",
+      text: "text-[#2d2926]",
+      muted: "text-[#766c61]",
+      border: "border-[#e7ddcc]",
+      cardBg: "bg-[#f5efe3] border-[#e2d6c3] hover:border-[#d5c6af]",
+      active: "bg-[#efe6d6] font-semibold text-[#2d2926]",
     },
     dark: {
-      bg: "bg-[#191919]",
-      text: "text-[#D8D8D8]",
-      muted: "text-[#8E8E8E]",
-      border: "border-[#2E2E2E]",
-      badge: "bg-[#2A2A2A] text-[#B0B0B0]",
-      cardBg: "bg-[#212121] border-[#333333] hover:border-[#444444]",
-      progress: "bg-neutral-300",
-      controlBg: "bg-[#242424] border-[#333333] text-[#A0A0A0]",
-      activeBtn: "bg-neutral-700 text-white font-semibold",
+      bg: "bg-[#18181b]",
+      text: "text-[#e4e4e7]",
+      muted: "text-[#a1a1aa]",
+      border: "border-[#3f3f46]",
+      cardBg: "bg-[#242428] border-[#3f3f46] hover:border-[#52525b]",
+      active: "bg-[#27272a] font-semibold text-[#f4f4f5]",
     },
   };
-
   const currentTheme = themeStyles[readingTheme];
-
-  const fontSizes = {
-    sm: "text-[17px] md:text-[18px] leading-[1.8]",
-    md: "text-[19px] md:text-[21px] leading-[1.85]",
-    lg: "text-[22px] md:text-[24px] leading-[1.9]",
-  };
-
-  const textAlignments = {
-    left: "prose-p:text-left prose-li:text-left",
-    center: "prose-p:text-center prose-li:text-center",
-    right: "prose-p:text-right prose-li:text-right",
-  };
+  const controlClass = `rounded-full border px-3 py-1 flex items-center gap-2 text-xs font-sans transition ${
+    readingTheme === "dark"
+      ? "border-neutral-700 text-neutral-300"
+      : "border-neutral-200 text-neutral-600"
+  }`;
+  const optionClass = (isActive) =>
+    `rounded-full px-2 py-0.5 transition ${
+      isActive ? currentTheme.active : "hover:text-neutral-900"
+    }`;
+  const fontSizeClass = {
+    sm: "text-[19px] leading-[2.05]",
+    md: "text-[22px] leading-[2.08]",
+    lg: "text-[25px] leading-[2.1]",
+  }[fontSize];
+  const textAlignClass = {
+    left: "text-left prose-p:text-left prose-li:text-left",
+    center: "text-center prose-p:text-center prose-li:text-center",
+    right: "text-right prose-p:text-right prose-li:text-right",
+  }[textAlign];
 
   return (
     <div
       onMouseUp={handleSelection}
       onTouchEnd={handleSelection}
-      className={`min-h-screen transition-colors duration-300 ${currentTheme.bg} ${currentTheme.text}`}
+      className={`w-full min-h-screen transition-colors duration-300 ${currentTheme.bg} ${currentTheme.text}`}
     >
-      <ReadingProgressBar accentColor={currentTheme.progress} />
-
       {/* Floating Quote Tooltip saat teks disorot */}
       {tooltipPos && (
         <div
@@ -296,133 +307,78 @@ export default function StoryDetail() {
         <span>{toastMessage}</span>
       </div>
 
-      <article className="py-7 sm:py-10 px-4 sm:px-5 md:px-0">
-        <div className="max-w-[680px] mx-auto">
-          {/* Top Control Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 sm:mb-10 pb-4 border-b border-dashed border-neutral-200/50">
-            <Link
-              to="/"
-              className={`inline-flex items-center gap-1.5 text-xs font-sans transition-colors ${currentTheme.muted} hover:${currentTheme.text}`}
+      <article className="mx-auto max-w-2xl px-4 py-6 sm:max-w-3xl sm:px-6">
+        <div>
+          <div className="mb-8 flex flex-col gap-4 border-b border-neutral-200/70 pb-5 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="button"
+              onClick={handleBack}
+              className={`text-sm font-sans transition hover:opacity-70 ${currentTheme.muted}`}
             >
-              <ArrowLeft size={14} />
-              <span>Kembali</span>
-            </Link>
+              ← Kembali
+            </button>
 
-            <div className="flex w-full sm:w-auto items-center gap-2 overflow-x-auto pb-1 sm:pb-0 -mx-1 px-1">
-              {/* Ukuran Font */}
-              <div
-                className={`flex items-center border rounded-full p-0.5 text-xs font-sans ${currentTheme.controlBg}`}
-              >
-                <button
-                  onClick={() => setFontSize("sm")}
-                  className={`px-2 py-1 sm:py-0.5 rounded-full ${fontSize === "sm" ? currentTheme.activeBtn : ""}`}
-                >
-                  A⁻
-                </button>
-                <button
-                  onClick={() => setFontSize("md")}
-                  className={`px-2 py-1 sm:py-0.5 rounded-full ${fontSize === "md" ? currentTheme.activeBtn : ""}`}
-                >
-                  A
-                </button>
-                <button
-                  onClick={() => setFontSize("lg")}
-                  className={`px-2 py-1 sm:py-0.5 rounded-full ${fontSize === "lg" ? currentTheme.activeBtn : ""}`}
-                >
-                  A⁺
-                </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className={controlClass}>
+                <button type="button" onClick={() => setFontSize("sm")} className={optionClass(fontSize === "sm")}>A⁻</button>
+                <button type="button" onClick={() => setFontSize("md")} className={optionClass(fontSize === "md")}>A</button>
+                <button type="button" onClick={() => setFontSize("lg")} className={optionClass(fontSize === "lg")}>A⁺</button>
               </div>
-
-              {/* Tema Warna */}
-              <div
-                className={`flex items-center border rounded-full p-0.5 text-xs font-sans ${currentTheme.controlBg}`}
-              >
-                <button
-                  onClick={() => setReadingTheme("light")}
-                  className={`px-2.5 py-1 sm:py-0.5 rounded-full ${readingTheme === "light" ? currentTheme.activeBtn : ""}`}
-                >
-                  Putih
-                </button>
-                <button
-                  onClick={() => setReadingTheme("paper")}
-                  className={`px-2.5 py-1 sm:py-0.5 rounded-full ${readingTheme === "paper" ? currentTheme.activeBtn : ""}`}
-                >
-                  Kertas
-                </button>
-                <button
-                  onClick={() => setReadingTheme("dark")}
-                  className={`px-2.5 py-1 sm:py-0.5 rounded-full ${readingTheme === "dark" ? currentTheme.activeBtn : ""}`}
-                >
-                  Malam
-                </button>
+              <div className={controlClass}>
+                <button type="button" onClick={() => setReadingTheme("light")} className={optionClass(readingTheme === "light")}>Putih</button>
+                <button type="button" onClick={() => setReadingTheme("paper")} className={optionClass(readingTheme === "paper")}>Kertas</button>
+                <button type="button" onClick={() => setReadingTheme("dark")} className={optionClass(readingTheme === "dark")}>Malam</button>
               </div>
-
-              {/* Perataan Teks */}
-              <div
-                className={`flex items-center border rounded-full p-0.5 text-xs font-sans ${currentTheme.controlBg}`}
-              >
-                <button
-                  onClick={() => setTextAlign("left")}
-                  className={`px-2.5 py-1 sm:py-0.5 rounded-full ${textAlign === "left" ? currentTheme.activeBtn : ""}`}
-                >
-                  Kiri
-                </button>
-                <button
-                  onClick={() => setTextAlign("center")}
-                  className={`px-2.5 py-1 sm:py-0.5 rounded-full ${textAlign === "center" ? currentTheme.activeBtn : ""}`}
-                >
-                  Tengah
-                </button>
-                <button
-                  onClick={() => setTextAlign("right")}
-                  className={`px-2.5 py-1 sm:py-0.5 rounded-full ${textAlign === "right" ? currentTheme.activeBtn : ""}`}
-                >
-                  Kanan
-                </button>
+              <div className={controlClass}>
+                <button type="button" onClick={() => setTextAlign("left")} className={optionClass(textAlign === "left")}>Kiri</button>
+                <button type="button" onClick={() => setTextAlign("center")} className={optionClass(textAlign === "center")}>Tengah</button>
+                <button type="button" onClick={() => setTextAlign("right")} className={optionClass(textAlign === "right")}>Kanan</button>
               </div>
-
-              {/* Tombol Share */}
-              <button
-                onClick={handleCopyLink}
-                className={`flex items-center gap-1 border rounded-full px-3 py-1.5 sm:py-1 text-xs font-sans hover:scale-105 active:scale-95 ${currentTheme.controlBg}`}
-              >
+              <button type="button" onClick={handleCopyLink} className={controlClass}>
                 <Share2 size={13} />
-                <span className="hidden sm:inline">Bagikan</span>
+                <span>Bagikan</span>
               </button>
+              {canEditStory && (
+                <Link
+                  to={`/creator/write?id=${story.id}`}
+                  className={controlClass}
+                >
+                  <Edit3 size={13} />
+                  <span>Edit Cerita</span>
+                </Link>
+              )}
             </div>
           </div>
 
           {/* Judul Cerita */}
-          <h1 className="font-serif text-[32px] sm:text-[40px] md:text-[44px] leading-[1.18] sm:leading-[1.2] font-bold tracking-tight mb-6">
+          <p className="mb-3 text-xs font-sans font-medium uppercase tracking-[0.2em] text-neutral-400">
+            {story.category || "Cerita"}
+          </p>
+
+          <h1 className="mb-6 font-serif text-3xl font-bold leading-tight sm:text-5xl">
             {story.title}
           </h1>
 
           {/* Metadata Penulis */}
           <div
-            className={`flex items-start sm:items-center gap-3 pb-7 sm:pb-8 mb-7 sm:mb-8 border-b ${currentTheme.border} text-sm`}
+            className={`mb-8 flex flex-wrap items-center gap-x-2 gap-y-2 border-b pb-8 font-sans text-sm ${currentTheme.border} ${currentTheme.muted}`}
           >
             <AuthorAvatar
               avatarUrl={authorAvatar}
               authorName={authorName}
               authorInitial={authorInitial}
             />
-            <div>
-              <div className="font-sans font-medium text-sm">{authorName}</div>
-              <div
-                className={`font-sans text-xs flex flex-wrap items-center gap-x-1.5 gap-y-1 mt-0.5 ${currentTheme.muted}`}
-              >
-                <span>{story.date}</span>
+            <span className="font-medium">{authorName}</span>
+            <span>·</span>
+            <span>{story.date}</span>
+            <span>·</span>
+            <span>{readTime}</span>
+            {story.category && (
+              <>
                 <span>·</span>
-                <span>{readTime}</span>
-                <span>({wordCount} kata)</span>
-                <span>·</span>
-                <span
-                  className={`px-2 py-0.5 rounded text-[10px] ${currentTheme.badge}`}
-                >
-                  {story.category}
-                </span>
-              </div>
-            </div>
+                <span>{story.category}</span>
+              </>
+            )}
           </div>
 
           {/* Tombol Khusus Penulis (Hanya muncul jika sudah login) */}
@@ -468,7 +424,9 @@ export default function StoryDetail() {
           {/* Tubuh Cerita */}
           <div
             ref={contentRef}
-            className={`prose font-serif max-w-none prose-p:mb-6 sm:prose-p:mb-7 prose-img:rounded-sm break-words selection:bg-neutral-200/70 dark:selection:bg-neutral-700 ${fontSizes[fontSize]} ${textAlignments[textAlign]}`}
+            className={`prose max-w-none break-words font-serif selection:bg-neutral-200/70 prose-p:mb-6 prose-img:rounded-sm ${fontSizeClass} ${textAlignClass} ${
+              readingTheme === "dark" ? "prose-invert" : "prose-neutral"
+            }`}
             style={{ color: "inherit" }}
           >
             <ReactMarkdown>{story.content}</ReactMarkdown>
@@ -486,7 +444,7 @@ export default function StoryDetail() {
                 Beri tepukan untuk mengapresiasi tulisan.
               </p>
             </div>
-            <ClapButton slug={story.slug} theme={readingTheme} />
+            <ClapButton slug={story.slug} theme="light" />
           </div>
 
           {/* Bio Singkat Penulis */}

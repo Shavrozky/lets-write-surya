@@ -4,6 +4,33 @@ import StoryCard from "../components/StoryCard";
 
 const pageSizeOptions = [5, 10, 25, 100];
 
+const formatDate = (date) =>
+  new Intl.DateTimeFormat("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(date));
+
+const createExcerpt = (content = "") => {
+  const plainText = content
+    .replace(/<[^>]*>/g, " ")
+    .replace(/[#*_>`\[\]()]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return plainText.length > 150 ? `${plainText.slice(0, 150)}...` : plainText;
+};
+
+const normalizeCommunityStory = (story) => ({
+  ...story,
+  slug: `community-${story.id}`,
+  detailPath: `/creator/stories/${story.id}`,
+  date: formatDate(story.created_at || story.updated_at),
+  category: story.category || "Komunitas",
+  excerpt: story.excerpt || createExcerpt(story.content),
+  coverImage: story.cover_image || story.coverImage || null,
+});
+
 export default function Home() {
   const [storyList, setStoryList] = useState(fallbackStories);
   const [activeCategory, setActiveCategory] = useState("Semua");
@@ -14,18 +41,55 @@ export default function Home() {
     const API_BASE_URL =
       import.meta.env.VITE_API_URL || "https://api.katasurya.my.id/api";
 
-    fetch(`${API_BASE_URL}/stories`)
-      .then((res) => {
+    console.log("[Home] loading stories", { API_BASE_URL });
+
+    Promise.allSettled([
+      fetch(`${API_BASE_URL}/stories`).then((res) => {
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
         return res.json();
-      })
-      .then((data) => {
-        // Cukup pastikan respon berupa array
-        if (Array.isArray(data)) {
-          setStoryList(data);
+      }),
+      fetch(`${API_BASE_URL}/community/stories`).then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
         }
+        return res.json();
+      }),
+    ])
+      .then(([legacyStoriesResult, communityStoriesResult]) => {
+        console.log("[Home] stories results", {
+          legacyStoriesResult,
+          communityStoriesResult,
+        });
+
+        const legacyStories =
+          legacyStoriesResult.status === "fulfilled"
+            ? legacyStoriesResult.value
+            : [];
+        const communityStories =
+          communityStoriesResult.status === "fulfilled"
+            ? communityStoriesResult.value
+            : null;
+
+        const normalizedLegacyStories = Array.isArray(legacyStories)
+          ? legacyStories
+          : [];
+        const normalizedCommunityStories = Array.isArray(communityStories?.data)
+          ? communityStories.data.map(normalizeCommunityStory)
+          : [];
+
+        console.log("[Home] normalized stories", {
+          legacyCount: normalizedLegacyStories.length,
+          communityCount: normalizedCommunityStories.length,
+          total:
+            normalizedCommunityStories.length + normalizedLegacyStories.length,
+        });
+
+        setStoryList([
+          ...normalizedCommunityStories,
+          ...normalizedLegacyStories,
+        ]);
       })
       .catch((err) => {
         console.warn(
@@ -75,7 +139,7 @@ export default function Home() {
     <main className="mx-auto w-full max-w-3xl py-4 sm:py-8">
       <section className="mb-8 sm:mb-10 pb-6 sm:pb-8 border-b border-proseBorder">
         <h1 className="font-serif text-[34px] sm:text-4xl font-bold tracking-tight text-proseText mb-2">
-          Aksara Kita
+          Aksara
         </h1>
         <p className="font-serif text-proseMuted text-[17px] sm:text-lg leading-relaxed max-w-[580px]">
           Ruang catatan, fiksi reflektif, dan rekam pikiran. Tulisan-tulisan

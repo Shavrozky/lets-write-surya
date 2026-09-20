@@ -1,11 +1,10 @@
 // src/components/Navbar.jsx
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { PenLine, Search, UserCircle } from "lucide-react";
 import { useCommunityAuth } from "../creator/context/CommunityAuthContext";
 import { getAvatarUrl } from "../creator/services/communityApi";
 
 export default function Navbar() {
-  const navigate = useNavigate();
   const { user, isAuthenticated, isLoading } = useCommunityAuth();
   const displayName = user?.pen_name || user?.name || "Profil";
   const initial = displayName.charAt(0).toUpperCase();
@@ -44,62 +43,35 @@ export default function Navbar() {
           {isLoading ? (
             <div className="h-9 w-28 animate-pulse rounded-full bg-neutral-100" />
           ) : isAuthenticated ? (
-            <div className="group relative shrink-0">
-              <button
-                className="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-neutral-950 text-xs font-semibold text-white"
-                title={displayName}
-              >
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt={displayName}
-                    className="h-full w-full object-cover"
-                  />
-                ) : initial ? (
-                  initial
-                ) : (
-                  <UserCircle size={20} />
-                )}
-              </button>
-
-              <div className="invisible absolute right-0 top-11 w-52 translate-y-1 rounded-2xl border border-neutral-200 bg-white p-2 opacity-0 shadow-xl transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
-                <div className="border-b border-neutral-100 px-3 py-2">
-                  <p className="truncate text-sm font-semibold text-neutral-950">
-                    {displayName}
-                  </p>
-                  <p className="truncate text-xs text-neutral-400">{user?.email}</p>
-                </div>
-                <Link
-                  to="/creator/stories"
-                  className="mt-1 block rounded-xl px-3 py-2 text-xs text-neutral-600 hover:bg-neutral-50 hover:text-neutral-950"
-                >
-                  Stories saya
-                </Link>
-                <Link
-                  to="/creator/profile"
-                  className="block rounded-xl px-3 py-2 text-xs text-neutral-600 hover:bg-neutral-50 hover:text-neutral-950"
-                >
-                  Profil
-                </Link>
-                <button
-                  onClick={() => navigate("/creator/stories")}
-                  className="block w-full rounded-xl px-3 py-2 text-left text-xs text-neutral-500 hover:bg-neutral-50"
-                >
-                  Keluar lewat sidebar
-                </button>
-              </div>
-            </div>
+            <Link
+              to="/creator/profile"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-950 text-xs font-semibold text-white"
+              title={displayName}
+              aria-label={`Buka profil ${displayName}`}
+            >
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={displayName}
+                  className="h-full w-full object-cover"
+                />
+              ) : initial ? (
+                initial
+              ) : (
+                <UserCircle size={20} />
+              )}
+            </Link>
           ) : (
             <>
               <Link
                 to="/creator/auth?mode=signup"
-                className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-700"
+                  className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-700"
               >
                 Sign up
               </Link>
               <Link
                 to="/creator/auth?mode=signin"
-                className="rounded-full px-3 py-2 text-xs font-medium text-neutral-500 transition hover:text-neutral-950"
+                  className="rounded-full px-3 py-2 text-xs font-medium text-neutral-500 transition hover:text-neutral-950"
               >
                 Sign in
               </Link>
