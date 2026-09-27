@@ -18,10 +18,9 @@ export default function Navbar() {
         {/* Sisi Kiri: Tombol Hamburger + Logo */}
         <div className="flex min-w-0 items-center gap-3">
           <button
-            type="button"
             onClick={toggleSidebar}
-            aria-label="Toggle Sidebar"
-            className="group relative flex h-9 w-9 items-center justify-center rounded-lg text-neutral-500 transition-all duration-200 hover:bg-neutral-100 hover:text-neutral-900 active:scale-90 cursor-pointer"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-600 transition-all duration-150 ease-out hover:bg-neutral-100 hover:text-neutral-900 active:scale-90"
+            aria-label="Toggle menu"
           >
             <div className="relative h-5 w-5">
               <span
@@ -31,7 +30,7 @@ export default function Navbar() {
                     : "rotate-0 opacity-100 scale-100"
                 }`}
               >
-                <Menu size={20} />
+                <Menu size={20} strokeWidth={2} />
               </span>
               <span
                 className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ease-in-out ${

@@ -51,7 +51,7 @@ function AnimatedRoutes() {
         {/* Rute Login Eksklusif */}
         <Route path="/login" element={<Login />} />
 
-        {/* Rute Write Terproteksi (Hanya Bisa Dibuka Jika Sudah Login) */}
+        {/* Rute Write Terproteksi */}
         <Route
           path="/write"
           element={
@@ -71,7 +71,10 @@ function AnimatedRoutes() {
             }
           />
           <Route path="auth" element={<CreatorAuth />} />
-          <Route path="auth/google/callback" element={<CreatorGoogleCallback />} />
+          <Route
+            path="auth/google/callback"
+            element={<CreatorGoogleCallback />}
+          />
           <Route path="profile" element={<CreatorProfile />} />
           <Route path="stories" element={<CreatorStories />} />
           <Route path="stories/:id" element={<CreatorStoryDetail />} />
@@ -86,38 +89,20 @@ function AnimatedRoutes() {
 function AppFrame() {
   const location = useLocation();
   const { isOpen, closeSidebar } = useSidebar();
-  const isReaderRoute =
-    location.pathname.startsWith("/cerita/") ||
-    location.pathname.startsWith("/creator/stories/");
 
-  // Otomatis tutup drawer di layar kecil ketika berpindah halaman
+  // Menutup drawer otomatis setiap kali berpindah halaman
   useEffect(() => {
-    if (window.innerWidth < 1024) {
-      closeSidebar();
-    }
+    closeSidebar();
   }, [location.pathname]);
-
-  if (isReaderRoute) {
-    return (
-      <CommunityAuthProvider>
-        <div className="min-h-screen bg-neutral-100/60 text-neutral-950">
-          <Navbar />
-          <AnimatedRoutes />
-        </div>
-        <AmbientPlayer />
-      </CommunityAuthProvider>
-    );
-  }
 
   return (
     <CommunityAuthProvider>
-      <div className="min-h-screen bg-white text-neutral-950">
+      <div className="min-h-screen bg-white text-neutral-950 transition-colors duration-300">
         <Navbar />
 
-        {/* Mobile Backdrop Overlay */}
         <div
           onClick={closeSidebar}
-          className={`fixed inset-0 z-40 bg-black/40 backdrop-blur-xs transition-opacity duration-300 md:hidden ${
+          className={`fixed inset-0 z-40 bg-neutral-950/20 backdrop-blur-[2px] transition-opacity duration-300 ease-out ${
             isOpen
               ? "opacity-100 pointer-events-auto"
               : "opacity-0 pointer-events-none"
@@ -125,9 +110,8 @@ function AppFrame() {
           aria-hidden="true"
         />
 
-        {/* Mobile Drawer Slide-over */}
         <aside
-          className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-2xl transition-transform duration-300 ease-out md:hidden flex flex-col p-5 ${
+          className={`fixed top-0 left-0 z-50 h-screen w-64 bg-white border-r border-neutral-200/80 shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform flex flex-col p-5 ${
             isOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
@@ -136,25 +120,11 @@ function AppFrame() {
           </div>
         </aside>
 
-        {/* Layout Konten Utama dengan Desktop Sidebar Animasi Mulus */}
-        <div className="mx-auto flex max-w-7xl gap-6 px-4 py-5 lg:px-6">
-          <div
-            className={`hidden md:block shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${
-              isOpen
-                ? "w-60 opacity-100"
-                : "w-0 -mr-6 opacity-0 pointer-events-none"
-            }`}
-          >
-            <div className="w-60">
-              <AppSidebar />
-            </div>
-          </div>
-
-          <main className="min-w-0 flex-1 transition-all duration-300">
-            <AnimatedRoutes />
-          </main>
-        </div>
+        <main className="min-w-0 w-full">
+          <AnimatedRoutes />
+        </main>
       </div>
+
       <AmbientPlayer />
     </CommunityAuthProvider>
   );
