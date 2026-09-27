@@ -7,8 +7,21 @@ const formatDate = (date) =>
     year: "numeric",
   }).format(new Date(date));
 
+const stripHtml = (html = "") => {
+  if (typeof window !== "undefined" && window.DOMParser) {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return doc.body.textContent || "";
+  }
+
+  return html.replace(/<[^>]*>/g, " ");
+};
+
 const createExcerpt = (content = "") => {
-  const plainText = content.replace(/[#*_>`\[\]()]/g, "").replace(/\s+/g, " ").trim();
+  const plainText = stripHtml(content)
+    .replace(/[#*_>`\[\]()]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
   return plainText.length > 150 ? `${plainText.slice(0, 150)}...` : plainText;
 };
 
@@ -32,7 +45,7 @@ export default function CreatorStoryCard({ story }) {
         </h2>
       </Link>
 
-      <p className="mt-2 text-sm leading-relaxed text-neutral-500">
+      <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-neutral-500">
         {createExcerpt(story.content)}
       </p>
     </article>

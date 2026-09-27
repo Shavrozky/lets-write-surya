@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { Check, Edit3, Share2 } from "lucide-react";
 import { communityApi, getAvatarUrl } from "../services/communityApi";
 import { useCommunityAuth } from "../context/CommunityAuthContext";
+import ReadingProgressBar from "../components/ReadingProgressBar";
 
 const formatDate = (date) =>
   new Intl.DateTimeFormat("id-ID", {
@@ -181,6 +182,9 @@ export default function CreatorStoryDetail() {
     <main
       className={`w-full min-h-screen transition-colors duration-300 ${currentTheme.bg} ${currentTheme.text}`}
     >
+      {/* Indikator Membaca Mengambang di Paling Atas Layar */}
+      <ReadingProgressBar theme={readingTheme} />
+
       <div
         className={`fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-neutral-700 bg-neutral-900 px-4 py-2.5 text-xs text-white shadow-lg transition-all duration-300 ease-out ${
           toastMessage

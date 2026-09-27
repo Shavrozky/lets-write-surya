@@ -63,7 +63,7 @@ export default function CreatorProfile() {
 
   if (isLoading || !user) {
     return (
-      <div className="rounded-[28px] border border-neutral-200 bg-white p-8 text-center text-sm text-neutral-400">
+      <div className="flex min-h-[50vh] items-center justify-center text-sm font-sans text-neutral-400">
         Memuat profil...
       </div>
     );
@@ -72,7 +72,9 @@ export default function CreatorProfile() {
   const displayName = user.pen_name || user.name || "Penulis Aksara";
   const initial = displayName.charAt(0).toUpperCase() || "A";
   const avatarUrl = getAvatarUrl(user.avatar);
-  const publishedStories = stories.filter((story) => story.status === "published");
+  const publishedStories = stories.filter(
+    (story) => story.status === "published",
+  );
 
   const handleSaveProfile = async (payload) => {
     const data = await communityApi.updateProfile(payload);
@@ -89,21 +91,25 @@ export default function CreatorProfile() {
     <>
       <FeedbackModal feedback={feedback} onClose={() => setFeedback(null)} />
 
-      <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <main className="min-w-0 border-neutral-200 lg:border-r lg:pr-10">
-          <header className="border-b border-neutral-200 pb-5">
-            <h1 className="font-serif text-4xl font-bold tracking-tight text-neutral-950 sm:text-5xl">
+      {/* Kontainer Utama dengan Padding dan Gap Lega */}
+      <div className="mx-auto grid max-w-6xl gap-12 px-6 sm:px-10 py-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-16">
+        {/* ================= KOLOM KIRI (ARTIKEL) ================= */}
+        <main className="min-w-0 lg:border-r lg:border-neutral-100 lg:pr-14">
+          {/* Header Profil (Tanpa double-border) */}
+          <header className="mb-8">
+            <h1 className="font-serif text-4xl font-bold capitalize tracking-tight text-neutral-950 sm:text-5xl">
               {displayName}
             </h1>
 
-            <div className="mt-8 flex gap-8 text-sm">
+            {/* Tab Navigasi Bersih ala Medium */}
+            <div className="mt-8 flex gap-8 border-b border-neutral-200/80 text-sm font-sans">
               <button
                 type="button"
                 onClick={() => setActiveTab("home")}
-                className={`border-b pb-3 transition ${
+                className={`relative pb-3 font-medium transition-colors ${
                   activeTab === "home"
-                    ? "border-neutral-950 text-neutral-950"
-                    : "border-transparent text-neutral-400 hover:text-neutral-950"
+                    ? "text-neutral-950 font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1.5px] after:bg-neutral-950"
+                    : "text-neutral-400 hover:text-neutral-700"
                 }`}
               >
                 Home
@@ -111,10 +117,10 @@ export default function CreatorProfile() {
               <button
                 type="button"
                 onClick={() => setActiveTab("about")}
-                className={`border-b pb-3 transition ${
+                className={`relative pb-3 font-medium transition-colors ${
                   activeTab === "about"
-                    ? "border-neutral-950 text-neutral-950"
-                    : "border-transparent text-neutral-400 hover:text-neutral-950"
+                    ? "text-neutral-950 font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1.5px] after:bg-neutral-950"
+                    : "text-neutral-400 hover:text-neutral-700"
                 }`}
               >
                 About
@@ -122,57 +128,78 @@ export default function CreatorProfile() {
             </div>
           </header>
 
+          {/* Tab Home: Cerita Terbit */}
           {activeTab === "home" ? (
-            <section className="py-2">
+            <section className="divide-y divide-neutral-100">
               {loadingStories && (
-                <div className="py-10 text-sm text-neutral-400">Memuat tulisan...</div>
+                <div className="py-12 text-center text-sm font-sans text-neutral-400">
+                  Memuat tulisan...
+                </div>
               )}
 
               {!loadingStories && errorMessage && (
-                <div className="py-10 text-sm text-red-600">{errorMessage}</div>
-              )}
-
-              {!loadingStories && !errorMessage && publishedStories.length === 0 && (
-                <div className="py-14 text-center">
-                  <p className="font-serif text-2xl font-bold text-neutral-950">
-                    Belum ada cerita terbit.
-                  </p>
-                  <p className="mt-2 text-sm text-neutral-500">
-                    Tulisan yang sudah dipublikasikan akan tampil di profilmu.
-                  </p>
-                  <Link
-                    to="/creator/write"
-                    className="mt-5 inline-flex rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800"
-                  >
-                    Tulis sekarang
-                  </Link>
+                <div className="my-6 rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-medium text-red-600">
+                  {errorMessage}
                 </div>
               )}
 
               {!loadingStories &&
                 !errorMessage &&
+                publishedStories.length === 0 && (
+                  <div className="py-16 text-center">
+                    <p className="font-serif text-2xl font-bold text-neutral-950">
+                      Belum ada cerita terbit.
+                    </p>
+                    <p className="mt-2 text-sm text-neutral-500 font-sans">
+                      Tulisan yang sudah dipublikasikan akan tampil di profilmu.
+                    </p>
+                    <Link
+                      to="/creator/write"
+                      className="mt-6 inline-flex rounded-full bg-neutral-950 px-5 py-2.5 text-xs font-medium text-white transition hover:bg-neutral-800 shadow-sm"
+                    >
+                      Tulis sekarang
+                    </Link>
+                  </div>
+                )}
+
+              {!loadingStories &&
+                !errorMessage &&
                 publishedStories.map((story) => (
-                  <CreatorStoryCard key={story.id} story={{ ...story, author: user }} />
+                  <div key={story.id} className="py-2">
+                    <CreatorStoryCard
+                      story={{
+                        ...story,
+                        author: {
+                          ...user,
+                          pen_name: displayName,
+                          name: displayName,
+                        },
+                      }}
+                    />
+                  </div>
                 ))}
             </section>
           ) : (
-            <section className="max-w-2xl py-10">
-              <h2 className="font-serif text-2xl font-bold text-neutral-950">
+            /* Tab About */
+            <section className="max-w-2xl py-6 font-serif">
+              <h2 className="text-2xl font-bold text-neutral-950">
                 Tentang {displayName}
               </h2>
-              <p className="mt-4 text-base leading-8 text-neutral-700">
-                {user.bio || "Penulis ini belum menambahkan bio."}
+              <p className="mt-4 text-[17px] leading-relaxed text-neutral-700">
+                {user.bio || "Penulis ini belum menambahkan bio narasi."}
               </p>
-              <div className="mt-8 border-t border-neutral-200 pt-5 text-sm text-neutral-500">
+              <div className="mt-8 border-t border-neutral-100 pt-5 text-xs font-sans text-neutral-400">
                 Bergabung sejak {formatJoinDate(user.created_at)}
               </div>
             </section>
           )}
         </main>
 
+        {/* ================= SIDEBAR KANAN (PROFIL RINGKAS) ================= */}
         <aside className="lg:sticky lg:top-24 lg:h-fit">
-          <div className="border-neutral-200 pb-8 lg:border-b">
-            <div className="h-24 w-24 overflow-hidden rounded-full bg-neutral-950 text-white">
+          <div className="space-y-4">
+            {/* Avatar Bulat Minimalis */}
+            <div className="h-20 w-20 sm:h-24 sm:w-24 overflow-hidden rounded-full bg-neutral-950 text-white shadow-sm ring-1 ring-neutral-200/60">
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
@@ -180,26 +207,38 @@ export default function CreatorProfile() {
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-3xl font-semibold">
+                <div className="flex h-full w-full items-center justify-center font-serif text-3xl font-semibold">
                   {initial}
                 </div>
               )}
             </div>
 
-            <h2 className="mt-4 text-base font-semibold text-neutral-950">
-              {displayName}
-            </h2>
-            <p className="mt-2 line-clamp-4 text-sm leading-6 text-neutral-500">
-              {user.bio || "Tambahkan bio singkat agar pembaca mengenalmu."}
-            </p>
+            {/* Nama & Bio */}
+            <div>
+              <h2 className="font-sans text-base font-bold capitalize text-neutral-950">
+                {displayName}
+              </h2>
+              <p className="mt-1.5 line-clamp-4 font-sans text-xs leading-relaxed text-neutral-500">
+                {user.bio ||
+                  "Tambahkan bio singkat agar pembaca mengenalmu lebih dekat."}
+              </p>
+            </div>
 
-            <button
-              type="button"
-              onClick={() => setIsEditing(true)}
-              className="mt-4 text-sm font-medium text-emerald-700 transition hover:text-emerald-800"
-            >
-              Edit profile
-            </button>
+            {/* Tombol Edit Profile */}
+            <div>
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="mt-2 inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-4 py-1.5 text-xs font-medium text-neutral-700 shadow-sm transition hover:border-neutral-900 hover:text-neutral-950 active:scale-95"
+              >
+                Edit profile
+              </button>
+            </div>
+
+            {/* Info Jumlah Cerita (Pengganti garis kosong) */}
+            <div className="pt-6 border-t border-neutral-100 text-[11px] font-sans text-neutral-400">
+              <span>{publishedStories.length} cerita telah terbit</span>
+            </div>
           </div>
         </aside>
       </div>

@@ -10,6 +10,7 @@ import { auth } from "../utils/auth";
 import { deleteStory } from "../services/api";
 import { getAvatarUrl } from "../creator/services/communityApi";
 import { useCommunityAuth } from "../creator/context/CommunityAuthContext";
+import ReadingProgressBar from "../components/ReadingProgressBar";
 
 const SURYA_DEFAULT_AVATAR = "/suryanata.jpg";
 
@@ -220,9 +221,9 @@ export default function StoryDetail() {
   const isAdmin = user?.role === "admin";
   const isOwner = Boolean(
     user?.id &&
-      (story.author_id === user.id ||
-        story.author?.id === user.id ||
-        story.user_id === user.id),
+    (story.author_id === user.id ||
+      story.author?.id === user.id ||
+      story.user_id === user.id),
   );
   const canEditStory = Boolean(story.id && (isAdmin || isOwner));
 
@@ -279,6 +280,8 @@ export default function StoryDetail() {
       onTouchEnd={handleSelection}
       className={`w-full min-h-screen transition-colors duration-300 ${currentTheme.bg} ${currentTheme.text}`}
     >
+      {/* Indikator Membaca Mengambang di Paling Atas Layar */}
+      <ReadingProgressBar theme={readingTheme} />
       {/* Floating Quote Tooltip saat teks disorot */}
       {tooltipPos && (
         <div
@@ -320,21 +323,79 @@ export default function StoryDetail() {
 
             <div className="flex flex-wrap items-center gap-2">
               <div className={controlClass}>
-                <button type="button" onClick={() => setFontSize("sm")} className={optionClass(fontSize === "sm")}>A⁻</button>
-                <button type="button" onClick={() => setFontSize("md")} className={optionClass(fontSize === "md")}>A</button>
-                <button type="button" onClick={() => setFontSize("lg")} className={optionClass(fontSize === "lg")}>A⁺</button>
+                <button
+                  type="button"
+                  onClick={() => setFontSize("sm")}
+                  className={optionClass(fontSize === "sm")}
+                >
+                  A⁻
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFontSize("md")}
+                  className={optionClass(fontSize === "md")}
+                >
+                  A
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFontSize("lg")}
+                  className={optionClass(fontSize === "lg")}
+                >
+                  A⁺
+                </button>
               </div>
               <div className={controlClass}>
-                <button type="button" onClick={() => setReadingTheme("light")} className={optionClass(readingTheme === "light")}>Putih</button>
-                <button type="button" onClick={() => setReadingTheme("paper")} className={optionClass(readingTheme === "paper")}>Kertas</button>
-                <button type="button" onClick={() => setReadingTheme("dark")} className={optionClass(readingTheme === "dark")}>Malam</button>
+                <button
+                  type="button"
+                  onClick={() => setReadingTheme("light")}
+                  className={optionClass(readingTheme === "light")}
+                >
+                  Putih
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReadingTheme("paper")}
+                  className={optionClass(readingTheme === "paper")}
+                >
+                  Kertas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReadingTheme("dark")}
+                  className={optionClass(readingTheme === "dark")}
+                >
+                  Malam
+                </button>
               </div>
               <div className={controlClass}>
-                <button type="button" onClick={() => setTextAlign("left")} className={optionClass(textAlign === "left")}>Kiri</button>
-                <button type="button" onClick={() => setTextAlign("center")} className={optionClass(textAlign === "center")}>Tengah</button>
-                <button type="button" onClick={() => setTextAlign("right")} className={optionClass(textAlign === "right")}>Kanan</button>
+                <button
+                  type="button"
+                  onClick={() => setTextAlign("left")}
+                  className={optionClass(textAlign === "left")}
+                >
+                  Kiri
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTextAlign("center")}
+                  className={optionClass(textAlign === "center")}
+                >
+                  Tengah
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTextAlign("right")}
+                  className={optionClass(textAlign === "right")}
+                >
+                  Kanan
+                </button>
               </div>
-              <button type="button" onClick={handleCopyLink} className={controlClass}>
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className={controlClass}
+              >
                 <Share2 size={13} />
                 <span>Bagikan</span>
               </button>

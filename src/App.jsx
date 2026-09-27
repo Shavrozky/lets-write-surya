@@ -1,5 +1,5 @@
 // src/App.jsx
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -25,6 +25,7 @@ import CreatorAdmin from "./creator/pages/CreatorAdmin";
 import CreatorAdminUsers from "./creator/pages/CreatorAdminUsers";
 import CreatorProfile from "./creator/pages/CreatorProfile";
 import { CommunityAuthProvider } from "./creator/context/CommunityAuthContext";
+import { SidebarProvider, useSidebar } from "./context/SidebarContext";
 
 const CreatorWrite = lazy(() => import("./creator/pages/CreatorWrite"));
 
@@ -84,9 +85,17 @@ function AnimatedRoutes() {
 
 function AppFrame() {
   const location = useLocation();
+  const { isOpen, closeSidebar } = useSidebar();
   const isReaderRoute =
     location.pathname.startsWith("/cerita/") ||
     location.pathname.startsWith("/creator/stories/");
+
+  // Otomatis tutup drawer di layar kecil ketika berpindah halaman
+  useEffect(() => {
+    if (window.innerWidth < 1024) {
+      closeSidebar();
+    }
+  }, [location.pathname]);
 
   if (isReaderRoute) {
     return (
@@ -104,9 +113,44 @@ function AppFrame() {
     <CommunityAuthProvider>
       <div className="min-h-screen bg-white text-neutral-950">
         <Navbar />
-        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-5 lg:px-6 md:grid-cols-[220px_minmax(0,1fr)]">
-          <AppSidebar />
-          <main className="min-w-0">
+
+        {/* Mobile Backdrop Overlay */}
+        <div
+          onClick={closeSidebar}
+          className={`fixed inset-0 z-40 bg-black/40 backdrop-blur-xs transition-opacity duration-300 md:hidden ${
+            isOpen
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
+          }`}
+          aria-hidden="true"
+        />
+
+        {/* Mobile Drawer Slide-over */}
+        <aside
+          className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-2xl transition-transform duration-300 ease-out md:hidden flex flex-col p-5 ${
+            isOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          <div className="flex-1 overflow-y-auto">
+            <AppSidebar />
+          </div>
+        </aside>
+
+        {/* Layout Konten Utama dengan Desktop Sidebar Animasi Mulus */}
+        <div className="mx-auto flex max-w-7xl gap-6 px-4 py-5 lg:px-6">
+          <div
+            className={`hidden md:block shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${
+              isOpen
+                ? "w-60 opacity-100"
+                : "w-0 -mr-6 opacity-0 pointer-events-none"
+            }`}
+          >
+            <div className="w-60">
+              <AppSidebar />
+            </div>
+          </div>
+
+          <main className="min-w-0 flex-1 transition-all duration-300">
             <AnimatedRoutes />
           </main>
         </div>
@@ -119,7 +163,9 @@ function AppFrame() {
 export default function App() {
   return (
     <Router>
-      <AppFrame />
+      <SidebarProvider>
+        <AppFrame />
+      </SidebarProvider>
     </Router>
   );
 }

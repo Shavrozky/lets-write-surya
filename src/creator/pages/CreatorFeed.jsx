@@ -34,8 +34,8 @@ export default function CreatorFeed() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[28px] border border-neutral-200 bg-white p-6 shadow-sm">
+    <div className="space-y-8">
+      <section className="border-b border-neutral-200 pb-6">
         <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">
           Ruang Komunal
         </p>
@@ -48,7 +48,7 @@ export default function CreatorFeed() {
         </p>
       </section>
 
-      <section className="overflow-hidden rounded-[28px] border border-neutral-200 bg-white">
+      <section className="overflow-hidden border-y border-neutral-200 bg-white">
         {loading && (
           <div className="p-8 text-center text-sm text-neutral-400">
             Memuat cerita komunitas...

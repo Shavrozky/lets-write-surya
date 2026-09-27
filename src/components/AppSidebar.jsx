@@ -64,9 +64,9 @@ export default function AppSidebar() {
   };
 
   return (
-    <aside className="flex flex-col justify-between border-r border-neutral-200/70 pr-6 md:sticky md:top-[65px] md:h-[calc(100vh-65px)] md:w-60">
-      <div className="flex-1 overflow-y-auto py-4">
-        <nav className="flex gap-5 overflow-x-auto border-b border-neutral-200/70 pb-3 md:block md:space-y-1 md:border-b-0 md:pb-0">
+    <aside className="flex h-full flex-col justify-between md:border-r md:border-neutral-200/70 md:pr-6 md:sticky md:top-[65px] md:h-[calc(100vh-65px)] md:w-60">
+      <div className="flex-1 overflow-y-auto py-2">
+        <nav className="space-y-1">
           {mainNavItems.map((item) => (
             <SidebarLink
               key={item.path}
@@ -77,7 +77,7 @@ export default function AppSidebar() {
         </nav>
 
         {visibleAdminItems.length > 0 && (
-          <nav className="mt-5 border-t border-neutral-200/70 pt-5 md:space-y-1">
+          <nav className="mt-5 border-t border-neutral-200/70 pt-5 space-y-1">
             {visibleAdminItems.map((item) => (
               <SidebarLink
                 key={item.path}
@@ -90,7 +90,7 @@ export default function AppSidebar() {
       </div>
 
       {isAuthenticated && (
-        <div className="hidden border-t border-neutral-200/70 py-4 md:block">
+        <div className="border-t border-neutral-200/70 py-4">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 pr-2">
               <p className="truncate text-sm font-medium text-neutral-950">

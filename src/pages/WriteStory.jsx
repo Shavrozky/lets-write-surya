@@ -1,7 +1,16 @@
-// src/pages/WriteStory.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  Image as ImageIcon,
+  X,
+  Bold,
+  Italic,
+  Quote,
+  Heading2,
+  Sparkles,
+} from "lucide-react";
 import { getReadingStats } from "../utils/readingTime";
 import { auth } from "../utils/auth";
 
@@ -22,6 +31,7 @@ export default function WriteStory() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("Monolog");
+  const [status, setStatus] = useState("draft"); // 'draft' atau 'published'
   const [coverImage, setCoverImage] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,24 +39,43 @@ export default function WriteStory() {
   const [errorMessage, setErrorMessage] = useState("");
   const [actionModal, setActionModal] = useState(null);
 
+  const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
+
   const { wordCount, readTime } = getReadingStats(content);
 
-  const openActionModal = (modal) => {
-    setActionModal(modal);
-  };
-
-  const closeActionModal = () => {
-    const nextPath = actionModal?.nextPath;
-    setActionModal(null);
-
-    if (nextPath) {
-      navigate(nextPath);
-    }
-  };
-
-  // Ambil token login kreator
   const token =
     auth.getToken() || localStorage.getItem("katasurya_token") || "";
+
+  // Auto-resize textarea judul
+  const handleTitleChange = (e) => {
+    setTitle(e.target.value);
+    e.target.style.height = "auto";
+    e.target.style.height = `${e.target.scrollHeight}px`;
+  };
+
+  // Helper untuk menyisipkan format Markdown
+  const insertMarkdown = (prefix, suffix = "") => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+    const replacement = `${prefix}${selectedText || "teks"}${suffix}`;
+
+    const newContent =
+      content.substring(0, start) + replacement + content.substring(end);
+    setContent(newContent);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(
+        start + prefix.length,
+        start + prefix.length + (selectedText.length || 4),
+      );
+    }, 0);
+  };
 
   const resizeCoverImage = (file) => {
     return new Promise((resolve, reject) => {
@@ -55,7 +84,6 @@ export default function WriteStory() {
 
       image.onload = () => {
         URL.revokeObjectURL(objectUrl);
-
         const scale = Math.min(
           1,
           MAX_COVER_WIDTH / image.width,
@@ -90,7 +118,6 @@ export default function WriteStory() {
 
   const handleCoverUpload = async (event) => {
     const file = event.target.files?.[0];
-
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
@@ -100,77 +127,63 @@ export default function WriteStory() {
     }
 
     if (file.size > MAX_COVER_FILE_SIZE) {
-      setErrorMessage("Ukuran gambar maksimal 5 MB sebelum dikompres.");
+      setErrorMessage("Ukuran gambar maksimal 5 MB.");
       event.target.value = "";
       return;
     }
 
     try {
       const compressedCover = await resizeCoverImage(file);
-
-      if (compressedCover.length > MAX_COVER_PAYLOAD_SIZE) {
-        setErrorMessage(
-          "Gambar masih terlalu besar setelah dikompres. Coba gunakan gambar yang lebih kecil.",
-        );
-        event.target.value = "";
-        return;
-      }
-
       setCoverImage(compressedCover);
       setErrorMessage("");
     } catch (err) {
       setErrorMessage(err.message);
+    } finally {
       event.target.value = "";
     }
   };
 
-  // Jika dalam Mode Edit, ambil naskah yang sudah ada
   useEffect(() => {
     if (!isEditMode) return;
 
     setIsLoadingStory(true);
     fetch(`${API_BASE_URL}/stories/${editSlug}`)
       .then((res) => {
-        if (!res.ok)
-          throw new Error("Gagal mengambil data naskah untuk diedit.");
+        if (!res.ok) throw new Error("Gagal mengambil data naskah.");
         return res.json();
       })
       .then((data) => {
-        setTitle(data.title || "");
-        setContent(data.content || "");
-        setCategory(data.category || "Monolog");
-        setCoverImage(data.coverImage || "");
+        const item = data.data || data;
+        setTitle(item.title || "");
+        setContent(item.content || "");
+        setCategory(item.category || "Monolog");
+        setStatus(item.status || "draft");
+        setCoverImage(item.coverImage || item.cover_image || "");
       })
-      .catch((err) => {
-        setErrorMessage(err.message);
-      })
-      .finally(() => {
-        setIsLoadingStory(false);
-      });
+      .catch((err) => setErrorMessage(err.message))
+      .finally(() => setIsLoadingStory(false));
   }, [isEditMode, editSlug, API_BASE_URL]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (submitStatus = status) => {
     if (!title.trim() || !content.trim()) {
-      openActionModal({
+      setActionModal({
         tone: "warning",
-        eyebrow: "Draft belum lengkap",
-        title: "Judul dan isi naskah wajib diisi.",
-        message:
-          "Lengkapi dua bagian utama ini dulu supaya naskah bisa diterbitkan dengan rapi.",
-        confirmLabel: "Lanjut menulis",
+        eyebrow: "Draf Belum Lengkap",
+        title: "Judul dan naskah wajib diisi.",
+        message: "Lengkapi judul dan isi tulisan terlebih dahulu.",
+        confirmLabel: "Lanjut Menulis",
       });
       return;
     }
 
     if (!token) {
-      openActionModal({
+      setActionModal({
         tone: "danger",
-        eyebrow: "Sesi tidak ditemukan",
+        eyebrow: "Sesi Habis",
         title: "Silakan login kembali.",
-        message:
-          "Akses penulis diperlukan untuk menyimpan naskah baru atau perubahan naskah.",
-        confirmLabel: "Ke halaman login",
-        nextPath: "/login",
+        message: "Akses penulis diperlukan untuk menyimpan naskah.",
+        confirmLabel: "Ke Halaman Login",
+        nextPath: "/creator/auth?mode=signin",
       });
       return;
     }
@@ -178,7 +191,6 @@ export default function WriteStory() {
     setIsSubmitting(true);
     setErrorMessage("");
 
-    // Tentukan endpoint & method: PUT jika edit, POST jika buat baru
     const endpoint = isEditMode
       ? `${API_BASE_URL}/stories/${editSlug}`
       : `${API_BASE_URL}/stories`;
@@ -197,6 +209,7 @@ export default function WriteStory() {
           title,
           content,
           category,
+          status: submitStatus,
           coverImage: coverImage.trim() || null,
         }),
       });
@@ -206,39 +219,30 @@ export default function WriteStory() {
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
           auth.logout();
-          throw new Error(
-            "Sesi telah habis atau otorisasi gagal. Silakan login kembali.",
-          );
+          throw new Error("Sesi telah habis. Silakan login kembali.");
         }
         throw new Error(data.message || "Gagal menyimpan naskah.");
       }
 
-      // Arahkan ke halaman detail naskah
-      const targetSlug = isEditMode ? editSlug : data.data?.slug;
-      openActionModal({
+      const targetSlug = isEditMode ? editSlug : data.data?.slug || data.slug;
+      setActionModal({
         tone: "success",
-        eyebrow: isEditMode ? "Perubahan tersimpan" : "Naskah terbit",
-        title: isEditMode
-          ? "Naskah berhasil diperbarui."
-          : "Naskah berhasil diterbitkan.",
-        message: isEditMode
-          ? "Perubahan terbaru sudah tersimpan dan siap dibaca kembali."
-          : "Cerita barumu sudah masuk ke arsip katasurya dan siap dibaca.",
-        confirmLabel: "Lihat naskah",
-        nextPath: `/cerita/${targetSlug}`,
+        eyebrow:
+          submitStatus === "published" ? "Naskah Terbit" : "Draf Tersimpan",
+        title:
+          submitStatus === "published"
+            ? "Ceritamu berhasil dipublikasikan."
+            : "Draf berhasil disimpan.",
+        message:
+          submitStatus === "published"
+            ? "Cerita sudah tayang dan siap dibaca oleh komunitas."
+            : "Perubahan naskah tersimpan dengan aman.",
+        confirmLabel:
+          submitStatus === "published" ? "Lihat Cerita" : "Lanjut Menulis",
+        nextPath: submitStatus === "published" ? `/cerita/${targetSlug}` : null,
       });
     } catch (err) {
       setErrorMessage(err.message);
-      openActionModal({
-        tone: "danger",
-        eyebrow: "Gagal menyimpan",
-        title: "Naskah belum berhasil disimpan.",
-        message: err.message,
-        confirmLabel: err.message.includes("login")
-          ? "Ke halaman login"
-          : "Coba lagi",
-        nextPath: err.message.includes("login") ? "/login" : null,
-      });
     } finally {
       setIsSubmitting(false);
     }
@@ -246,173 +250,219 @@ export default function WriteStory() {
 
   if (isLoadingStory) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-sm font-sans text-neutral-400">
-        <Loader2 className="animate-spin mr-2" size={16} /> Memuat naskah untuk
-        disunting...
+      <div className="min-h-screen bg-white flex items-center justify-center text-sm font-sans text-neutral-400">
+        <Loader2 className="animate-spin mr-2" size={16} /> Memuat naskah...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white text-proseText py-5 sm:py-8 px-4 sm:px-5">
-      {/* Top Header Bar */}
-      <div className="max-w-[800px] mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-proseBorder pb-4 mb-6 sm:mb-8">
-        <Link
-          to={isEditMode ? `/cerita/${editSlug}` : "/"}
-          className="inline-flex items-center gap-1 text-xs font-sans text-proseMuted hover:text-proseText"
-        >
-          <ArrowLeft size={14} />
-          <span>{isEditMode ? "Batal Edit" : "Kembali ke draft"}</span>
-        </Link>
+    <div className="min-h-screen bg-white text-neutral-900 selection:bg-neutral-200">
+      {/* ================= BILAH HEADER ATAS ================= */}
+      <nav className="sticky top-0 z-30 border-b border-neutral-100 bg-white/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3.5">
+          {/* Sisi Kiri: Kembali & Indikator Kategori */}
+          <div className="flex items-center gap-4">
+            <Link
+              to="/creator/stories"
+              className="flex items-center gap-1.5 text-xs font-medium text-neutral-400 transition hover:text-neutral-900"
+            >
+              <ArrowLeft size={15} />
+              <span>Kembali</span>
+            </Link>
 
-        {/* Stats & Tombol Publish / Save */}
-        <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end gap-4">
-          <div className="hidden sm:block text-xs font-sans text-proseMuted">
-            {wordCount} kata · {readTime}
+            <span className="h-3.5 w-px bg-neutral-200" />
+
+            {/* Pemilih Kategori Berbentuk Kapsul Bersahaja */}
+            <div className="flex items-center gap-1.5 text-xs text-neutral-500">
+              <Sparkles size={13} className="text-neutral-400" />
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="cursor-pointer rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs text-neutral-700 outline-none transition hover:border-neutral-300 focus:border-neutral-900"
+              >
+                <option value="Monolog">Monolog</option>
+                <option value="Fiksi">Fiksi</option>
+                <option value="Catatan">Catatan</option>
+                <option value="Puitis">Puitis</option>
+              </select>
+            </div>
           </div>
 
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="bg-[#1A8917] hover:bg-[#156f13] text-white px-4 py-2 sm:py-1.5 rounded-full text-xs font-sans font-medium transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-          >
-            {isSubmitting && <Loader2 size={13} className="animate-spin" />}
-            <span>{isEditMode ? "Simpan Perubahan" : "Publikasikan"}</span>
-          </button>
-        </div>
-      </div>
+          {/* Sisi Kanan: Statistik & Tombol Aksi */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            <span className="hidden sm:inline-block text-xs font-sans text-neutral-400">
+              {wordCount} kata · {readTime}
+            </span>
 
-      {/* Pesan Error Jika Ada */}
+            {/* Tombol Simpan Draf */}
+            <button
+              onClick={() => handleSubmit("draft")}
+              disabled={isSubmitting}
+              className="rounded-full border border-neutral-200 px-3.5 py-1.5 text-xs font-medium text-neutral-700 transition hover:bg-neutral-50 hover:border-neutral-300 disabled:opacity-50"
+            >
+              Simpan Draf
+            </button>
+
+            {/* Tombol Publikasi Hijau/Hitam Ala Medium */}
+            <button
+              onClick={() => handleSubmit("published")}
+              disabled={isSubmitting}
+              className="flex items-center gap-1.5 rounded-full bg-[#1A8917] px-4 py-1.5 text-xs font-medium text-white transition hover:bg-[#156f13] shadow-sm disabled:opacity-50"
+            >
+              {isSubmitting && <Loader2 size={13} className="animate-spin" />}
+              <span>{isEditMode ? "Perbarui" : "Publikasikan"}</span>
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* ================= PESAN KESALAHAN ================= */}
       {errorMessage && (
-        <div className="max-w-[700px] mx-auto mb-6 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-md">
-          {errorMessage}
+        <div className="mx-auto max-w-3xl px-6 pt-6">
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3.5 text-xs text-red-600">
+            {errorMessage}
+          </div>
         </div>
       )}
 
-      {/* Editor Naskah */}
-      <main className="max-w-[700px] mx-auto">
-        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 mb-7 sm:mb-8 p-3 bg-neutral-50 rounded-lg border border-neutral-150 text-xs font-sans">
-          <div className="flex items-center gap-1.5 text-neutral-600">
-            <Sparkles size={14} />
-            <span>Kategori:</span>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="bg-white border border-neutral-300 rounded px-2 py-2 sm:py-1 text-xs outline-none focus:border-neutral-500"
-            >
-              <option value="Monolog">Monolog</option>
-              <option value="Fiksi">Fiksi</option>
-              <option value="Catatan">Catatan</option>
-              <option value="Puitis">Puitis</option>
-            </select>
-          </div>
+      {/* ================= KANVAS PENULISAN (SEAMLESS) ================= */}
+      <main className="mx-auto max-w-3xl px-6 pt-10 pb-36">
+        {/* Kontrol Sampul Gambar (Minimalis) */}
+        <div className="mb-6">
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            onChange={handleCoverUpload}
+            className="hidden"
+          />
 
-          <div className="w-full sm:flex-1 sm:min-w-[240px]">
-            <label className="flex cursor-pointer items-center justify-between gap-3 rounded border border-neutral-300 bg-white px-2.5 py-2 sm:py-1 text-xs text-neutral-500 transition-colors hover:border-neutral-500">
-              <span className="truncate">
-                {coverImage ? "Ganti cover gambar" : "Upload cover gambar"}
-              </span>
-              <span className="shrink-0 rounded bg-neutral-100 px-2 py-0.5 text-[10px] font-medium text-neutral-600">
-                Pilih File
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleCoverUpload}
-                className="sr-only"
+          {!coverImage ? (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-neutral-300 px-3 py-1 text-xs text-neutral-400 transition hover:border-neutral-500 hover:text-neutral-700"
+            >
+              <ImageIcon size={14} />
+              <span>+ Tambah Gambar Sampul</span>
+            </button>
+          ) : (
+            <div className="group relative overflow-hidden rounded-2xl border border-neutral-100 bg-neutral-50">
+              <img
+                src={coverImage}
+                alt="Sampul cerita"
+                className="max-h-[360px] w-full object-cover"
               />
-            </label>
-          </div>
+              <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition group-hover:opacity-100">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-neutral-900 shadow hover:bg-white"
+                >
+                  Ganti Sampul
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCoverImage("")}
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-white shadow hover:bg-red-700"
+                  title="Hapus sampul"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {coverImage && (
-          <div className="mb-7 sm:mb-8 overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50">
-            <img
-              src={coverImage}
-              alt="Preview cover cerita"
-              className="h-52 w-full object-cover sm:h-64"
-            />
-            <div className="flex items-center justify-between gap-3 px-3 py-2 font-sans text-[11px] text-neutral-500">
-              <span>Preview cover cerita</span>
-              <button
-                type="button"
-                onClick={() => setCoverImage("")}
-                className="font-medium text-red-600 hover:text-red-700"
-              >
-                Hapus cover
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Input Judul */}
+        {/* Bidang Judul (Auto-expand, Tanpa Garis Tepi) */}
         <textarea
           rows={1}
           placeholder="Judul Cerita..."
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full font-serif text-[34px] sm:text-5xl font-bold tracking-tight text-proseText placeholder:text-neutral-300 outline-none resize-none mb-5 sm:mb-6 border-none focus:ring-0 leading-tight"
+          onChange={handleTitleChange}
+          className="w-full resize-none border-none bg-transparent font-serif text-3xl sm:text-5xl font-bold tracking-tight text-neutral-950 placeholder:text-neutral-300 focus:outline-none focus:ring-0 leading-tight mb-4"
         />
 
-        {/* Input Isi Naskah */}
+        {/* Toolbar Format Teks Tipis */}
+        <div className="sticky top-[60px] z-20 flex items-center gap-1 border-y border-neutral-100 bg-white/95 py-2 mb-6 backdrop-blur-sm">
+          <button
+            type="button"
+            onClick={() => insertMarkdown("**", "**")}
+            className="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition"
+            title="Tebal (Bold)"
+          >
+            <Bold size={15} />
+          </button>
+          <button
+            type="button"
+            onClick={() => insertMarkdown("*", "*")}
+            className="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition"
+            title="Miring (Italic)"
+          >
+            <Italic size={15} />
+          </button>
+          <button
+            type="button"
+            onClick={() => insertMarkdown("\n> ", "\n")}
+            className="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition"
+            title="Kutipan (Quote)"
+          >
+            <Quote size={15} />
+          </button>
+          <button
+            type="button"
+            onClick={() => insertMarkdown("\n## ", "\n")}
+            className="rounded p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition"
+            title="Subjudul (H2)"
+          >
+            <Heading2 size={16} />
+          </button>
+        </div>
+
+        {/* Kanvas Teks Utama (Bebas Border, Tipografi Nyaman) */}
         <textarea
-          rows={18}
-          placeholder="Mulai tulis ceritamu di sini... (Mendukung format Markdown)"
+          ref={textareaRef}
+          rows={20}
+          placeholder="Tuliskan kisahmu di sini... Biarkan kata-kata mengalir tenang."
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="w-full font-serif text-[18px] sm:text-xl text-proseText placeholder:text-neutral-300 outline-none resize-y leading-[1.8] sm:leading-[1.85] border-none focus:ring-0 min-h-[360px] sm:min-h-[450px]"
+          className="w-full resize-none border-none bg-transparent font-serif text-[18px] sm:text-[20px] leading-[2.1] text-neutral-800 placeholder:text-neutral-300 focus:outline-none focus:ring-0 min-h-[500px]"
         />
       </main>
 
+      {/* ================= MODAL NOTIFIKASI ================= */}
       {actionModal && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center px-4 py-8 font-sans">
-          <button
-            type="button"
-            aria-label="Tutup modal"
-            onClick={closeActionModal}
-            className="absolute inset-0 bg-neutral-950/45 backdrop-blur-sm"
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            onClick={() => setActionModal(null)}
+            className="absolute inset-0 bg-neutral-950/40 backdrop-blur-sm animate-in fade-in duration-200"
           />
 
-          <div className="relative w-full max-w-md overflow-hidden rounded-[28px] border border-white/70 bg-white shadow-2xl">
-            <div
-              className={`absolute -right-14 -top-14 h-36 w-36 rounded-full blur-2xl ${
-                actionModal.tone === "success"
-                  ? "bg-emerald-200/70"
-                  : actionModal.tone === "warning"
-                    ? "bg-amber-200/70"
-                    : "bg-red-200/70"
-              }`}
-            />
-            <div className="absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-neutral-200 blur-2xl" />
+          <div className="relative w-full max-w-sm rounded-[28px] bg-white p-6 sm:p-8 text-center shadow-2xl animate-in zoom-in-95 duration-200">
+            <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.2em] text-neutral-400 mb-2">
+              {actionModal.eyebrow}
+            </p>
 
-            <div className="relative p-6 sm:p-7">
-              <div
-                className={`mb-5 inline-flex rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] ${
-                  actionModal.tone === "success"
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                    : actionModal.tone === "warning"
-                      ? "border-amber-200 bg-amber-50 text-amber-700"
-                      : "border-red-200 bg-red-50 text-red-700"
-                }`}
-              >
-                {actionModal.eyebrow}
-              </div>
+            <h3 className="font-serif text-xl font-bold text-neutral-900 mb-2">
+              {actionModal.title}
+            </h3>
 
-              <h2 className="font-serif text-3xl font-bold leading-tight text-neutral-950">
-                {actionModal.title}
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-neutral-500">
-                {actionModal.message}
-              </p>
+            <p className="text-xs leading-relaxed text-neutral-500 mb-6">
+              {actionModal.message}
+            </p>
 
-              <button
-                type="button"
-                onClick={closeActionModal}
-                className="mt-7 w-full rounded-full bg-neutral-950 px-5 py-2.5 text-xs font-medium text-white transition hover:bg-neutral-800"
-              >
-                {actionModal.confirmLabel || "Mengerti"}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const next = actionModal.nextPath;
+                setActionModal(null);
+                if (next) navigate(next);
+              }}
+              className="w-full rounded-full bg-neutral-950 py-2.5 text-xs font-medium text-white transition hover:bg-neutral-800"
+            >
+              {actionModal.confirmLabel || "Mengerti"}
+            </button>
           </div>
         </div>
       )}
