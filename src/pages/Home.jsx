@@ -41,28 +41,17 @@ export default function Home() {
     const API_BASE_URL =
       import.meta.env.VITE_API_URL || "https://api.katasurya.my.id/api";
 
-    console.log("[Home] loading stories", { API_BASE_URL });
-
     Promise.allSettled([
       fetch(`${API_BASE_URL}/stories`).then((res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return res.json();
       }),
       fetch(`${API_BASE_URL}/community/stories`).then((res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return res.json();
       }),
     ])
       .then(([legacyStoriesResult, communityStoriesResult]) => {
-        console.log("[Home] stories results", {
-          legacyStoriesResult,
-          communityStoriesResult,
-        });
-
         const legacyStories =
           legacyStoriesResult.status === "fulfilled"
             ? legacyStoriesResult.value
@@ -79,24 +68,13 @@ export default function Home() {
           ? communityStories.data.map(normalizeCommunityStory)
           : [];
 
-        console.log("[Home] normalized stories", {
-          legacyCount: normalizedLegacyStories.length,
-          communityCount: normalizedCommunityStories.length,
-          total:
-            normalizedCommunityStories.length + normalizedLegacyStories.length,
-        });
-
         setStoryList([
           ...normalizedCommunityStories,
           ...normalizedLegacyStories,
         ]);
       })
       .catch((err) => {
-        console.warn(
-          "Gagal mengambil naskah dari API, menggunakan fallback lokal:",
-          err,
-        );
-        // setStoryList(fallbackStories); // jika ingin fallback
+        console.warn("Gagal mengambil naskah dari API:", err);
       });
   }, []);
 
@@ -136,85 +114,87 @@ export default function Home() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-3xl py-4 sm:py-8">
-      <section className="mb-8 sm:mb-10 pb-6 sm:pb-8 border-b border-proseBorder">
-        <h1 className="font-serif text-[34px] sm:text-4xl font-bold tracking-tight text-proseText mb-2">
+    /* mx-auto DIHAPUS, padding disamakan dengan navbar agar sejajar tegak lurus */
+    <main className="mx-auto w-full max-w-6xl px-6 py-8 sm:py-10">
+      {/* Header Aksara */}
+      <section className="mb-8 sm:mb-10 pb-6 sm:pb-8 border-b border-neutral-100">
+        <h1 className="font-serif text-[34px] sm:text-5xl font-bold tracking-tight text-neutral-900 mb-3">
           Aksara
         </h1>
-        <p className="font-serif text-proseMuted text-[17px] sm:text-lg leading-relaxed max-w-[580px]">
+        <p className="font-serif text-neutral-500 text-[17px] sm:text-lg leading-relaxed max-w-2xl">
           Ruang catatan, fiksi reflektif, dan rekam pikiran. Tulisan-tulisan
           yang ditulis saat malam terlalu sunyi atau pagi datang terlalu cepat.
         </p>
       </section>
 
-      <div className="flex items-center gap-5 sm:gap-6 border-b border-proseBorder mb-4 sm:mb-6 overflow-x-auto pb-1 text-sm font-sans -mx-4 px-4 sm:mx-0 sm:px-0">
+      {/* Kategori Tab */}
+      <div className="flex items-center gap-6 border-b border-neutral-200/80 mb-6 overflow-x-auto pb-1 text-sm font-sans">
         {categories.map((category) => {
           const isActive = activeCategory === category;
           return (
             <button
               key={category}
               onClick={() => handleCategoryChange(category)}
-              className={`pb-3 transition-colors relative whitespace-nowrap ${
+              className={`pb-3 transition-colors relative whitespace-nowrap font-medium ${
                 isActive
-                  ? "text-proseText font-medium"
-                  : "text-proseMuted hover:text-proseText"
+                  ? "text-neutral-950 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1.5px] after:bg-neutral-950"
+                  : "text-neutral-400 hover:text-neutral-700"
               }`}
             >
               {category}
-              {isActive && (
-                <span className="absolute bottom-0 left-0 w-full h-[1.5px] bg-proseText" />
-              )}
             </button>
           );
         })}
       </div>
 
-      <div className="mb-5 sm:mb-6 rounded-2xl border border-neutral-200 bg-gradient-to-br from-neutral-50 to-white p-4 font-sans shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-neutral-400">
-              Navigasi Naskah
-            </p>
-            <p className="mt-1 text-sm text-neutral-700">
-              Menampilkan {visibleStart}-{visibleEnd} dari{" "}
-              {filteredStories.length} cerita
-            </p>
-          </div>
+      {/* Navigasi / Bar Info Naskah */}
+      <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-neutral-100 bg-neutral-50/70 p-4 font-sans sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-400">
+            Navigasi Naskah
+          </p>
+          <p className="mt-0.5 text-xs text-neutral-600">
+            Menampilkan {visibleStart}–{visibleEnd} dari{" "}
+            {filteredStories.length} cerita
+          </p>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs text-neutral-600">
-              <span>Per halaman</span>
-              <select
-                value={pageSize}
-                onChange={(event) => handlePageSizeChange(event.target.value)}
-                className="bg-transparent font-semibold text-neutral-900 outline-none"
-              >
-                {pageSizeOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs text-neutral-600 shadow-xs">
+            <span>Per halaman:</span>
+            <select
+              value={pageSize}
+              onChange={(event) => handlePageSizeChange(event.target.value)}
+              className="bg-transparent font-semibold text-neutral-900 outline-none cursor-pointer"
+            >
+              {pageSizeOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </div>
 
-      <section>
+      {/* Daftar Naskah */}
+      <section className="divide-y divide-neutral-100">
         {paginatedStories.map((story) => (
           <StoryCard key={story.slug} story={story} />
         ))}
       </section>
 
+      {/* Empty State */}
       {filteredStories.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-neutral-200 px-4 py-12 text-center font-serif text-neutral-500">
+        <div className="rounded-2xl border border-dashed border-neutral-200 px-4 py-16 text-center font-serif text-neutral-400">
           Belum ada cerita untuk kategori ini.
         </div>
       )}
 
+      {/* Pagination */}
       {filteredStories.length > 0 && (
-        <nav className="mt-8 flex flex-col gap-3 border-t border-proseBorder pt-5 font-sans sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-proseMuted">
+        <nav className="mt-10 flex flex-col gap-4 border-t border-neutral-100 pt-6 font-sans sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-neutral-400">
             Halaman {safeCurrentPage} dari {totalPages}
           </p>
 
@@ -223,7 +203,7 @@ export default function Home() {
               type="button"
               onClick={() => goToPage(safeCurrentPage - 1)}
               disabled={safeCurrentPage === 1}
-              className="rounded-full border border-neutral-200 px-3 py-1.5 text-xs text-neutral-700 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Sebelumnya
             </button>
@@ -239,10 +219,10 @@ export default function Home() {
                     key={page}
                     type="button"
                     onClick={() => goToPage(page)}
-                    className={`h-8 min-w-8 rounded-full px-2 text-xs transition ${
+                    className={`h-7 min-w-7 rounded-full px-2 text-xs font-medium transition ${
                       page === safeCurrentPage
-                        ? "bg-neutral-900 text-white"
-                        : "border border-neutral-200 text-neutral-600 hover:border-neutral-400"
+                        ? "bg-neutral-950 text-white"
+                        : "border border-neutral-200 text-neutral-600 hover:border-neutral-400 hover:bg-neutral-50"
                     }`}
                   >
                     {page}
@@ -254,7 +234,7 @@ export default function Home() {
               type="button"
               onClick={() => goToPage(safeCurrentPage + 1)}
               disabled={safeCurrentPage === totalPages}
-              className="rounded-full border border-neutral-200 px-3 py-1.5 text-xs text-neutral-700 transition hover:border-neutral-400 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Berikutnya
             </button>

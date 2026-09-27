@@ -52,9 +52,8 @@ export default function CreatorStories() {
   const currentList = activeTab === "drafts" ? drafts : published;
 
   return (
-    <div className="w-full min-h-[calc(100vh-65px)] bg-white px-6 sm:px-12 py-8 sm:py-10">
-      <div className="max-w-4xl">
-        {/* ================= HEADER ================= */}
+    <div className="w-full min-h-[calc(100vh-65px)] bg-white px-6 sm:px-8 py-8 sm:py-12">
+      <div className="mx-auto max-w-4xl">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-neutral-100">
           <div>
             <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.2em] text-neutral-400 mb-1.5">

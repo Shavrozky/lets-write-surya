@@ -1,113 +1,100 @@
 // src/components/Navbar.jsx
 import { Link } from "react-router-dom";
-import { Menu, X, PenLine, Search, UserCircle } from "lucide-react";
+import { Menu, PenLine, Search } from "lucide-react";
 import { useSidebar } from "../context/SidebarContext";
 import { useCommunityAuth } from "../creator/context/CommunityAuthContext";
 import { getAvatarUrl } from "../creator/services/communityApi";
 
-export default function Navbar() {
+export default function Navbar({ onToggleSidebar }) {
   const { user, isAuthenticated, isLoading } = useCommunityAuth();
+  const { toggleSidebar } = useSidebar();
+
   const displayName = user?.pen_name || user?.name || "Profil";
   const initial = displayName.charAt(0).toUpperCase();
   const avatarUrl = getAvatarUrl(user?.avatar);
-  const { isOpen, toggleSidebar } = useSidebar();
+
+  // Fallback: gunakan prop onToggleSidebar jika ada, atau toggleSidebar dari context
+  const handleToggle = onToggleSidebar || toggleSidebar;
 
   return (
     <header className="sticky top-0 z-40 border-b border-neutral-100 bg-white/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-        {/* Sisi Kiri: Tombol Hamburger + Logo */}
-        <div className="flex min-w-0 items-center gap-3">
+      {/* Kontainer dengan max-w-6xl mx-auto px-6 */}
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
+        {/* ================= SISI KIRI: HAMBURGER + BRAND ================= */}
+        <div className="flex items-center gap-3">
           <button
-            onClick={toggleSidebar}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-600 transition-all duration-150 ease-out hover:bg-neutral-100 hover:text-neutral-900 active:scale-90"
+            type="button"
+            onClick={handleToggle}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900 active:scale-95"
             aria-label="Toggle menu"
           >
-            <div className="relative h-5 w-5">
-              <span
-                className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ease-in-out ${
-                  isOpen
-                    ? "rotate-90 opacity-0 scale-75"
-                    : "rotate-0 opacity-100 scale-100"
-                }`}
-              >
-                <Menu size={20} strokeWidth={2} />
-              </span>
-              <span
-                className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ease-in-out ${
-                  isOpen
-                    ? "rotate-0 opacity-100 scale-100"
-                    : "-rotate-90 opacity-0 scale-75"
-                }`}
-              >
-                <X size={20} />
-              </span>
-            </div>
+            <Menu size={20} strokeWidth={2} />
           </button>
 
           <Link
             to="/"
-            className="font-serif text-2xl font-bold tracking-tight text-neutral-900"
+            className="font-serif text-2xl font-bold tracking-tight text-neutral-900 transition-opacity hover:opacity-80"
           >
             Aksara
           </Link>
-
-          <label className="hidden min-w-0 items-center gap-2 rounded-full bg-neutral-100 px-4 py-2 text-sm text-neutral-500 md:flex md:w-[300px]">
-            <Search size={16} className="shrink-0" />
-            <input
-              type="search"
-              placeholder="Cari tulisan"
-              className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-neutral-400"
-            />
-          </label>
         </div>
 
-        <nav className="flex items-center gap-2 overflow-x-auto text-sm">
+        {/* ================= TENGAH: PENCARIAN TULISAN ================= */}
+        <div className="hidden sm:block flex-1 max-w-sm md:max-w-md mx-6">
+          <div className="relative">
+            <Search
+              size={15}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none"
+            />
+            <input
+              type="text"
+              placeholder="Cari tulisan..."
+              className="w-full rounded-full bg-neutral-100/80 py-2 pl-9 pr-4 text-xs font-sans text-neutral-800 placeholder:text-neutral-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-neutral-300 transition"
+            />
+          </div>
+        </div>
+
+        {/* ================= SISI KANAN: TULIS & PROFIL ================= */}
+        <div className="flex items-center gap-4 sm:gap-5">
+          {/* Tombol Tulis Naskah */}
           <Link
             to="/creator/write"
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-950"
+            className="flex items-center gap-1.5 text-xs font-sans font-medium text-neutral-500 hover:text-neutral-900 transition-colors"
           >
-            <PenLine size={15} />
-            <span>Write</span>
+            <PenLine size={16} />
+            <span className="hidden sm:inline">Write</span>
           </Link>
 
+          {/* Profil Avatar / Tombol Masuk */}
           {isLoading ? (
-            <div className="h-9 w-28 animate-pulse rounded-full bg-neutral-100" />
+            <div className="h-8 w-8 rounded-full bg-neutral-100 animate-pulse" />
           ) : isAuthenticated ? (
             <Link
               to="/creator/profile"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-950 text-xs font-semibold text-white"
+              className="flex items-center gap-2 group"
               title={displayName}
-              aria-label={`Buka profil ${displayName}`}
             >
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt={displayName}
-                  className="h-full w-full object-cover"
-                />
-              ) : initial ? (
-                initial
-              ) : (
-                <UserCircle size={20} />
-              )}
+              <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-neutral-900 text-xs font-semibold text-white shadow-xs ring-1 ring-neutral-200 transition group-hover:ring-neutral-400">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={displayName}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  initial
+                )}
+              </div>
             </Link>
           ) : (
-            <>
-              <Link
-                to="/creator/auth?mode=signup"
-                className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-700"
-              >
-                Sign up
-              </Link>
-              <Link
-                to="/creator/auth?mode=signin"
-                className="rounded-full px-3 py-2 text-xs font-medium text-neutral-500 transition hover:text-neutral-950"
-              >
-                Sign in
-              </Link>
-            </>
+            <Link
+              to="/creator/auth?mode=signin"
+              className="rounded-full bg-neutral-950 px-4 py-1.5 text-xs font-medium text-white transition hover:bg-neutral-800 shadow-xs"
+            >
+              Masuk
+            </Link>
           )}
-        </nav>
+        </div>
       </div>
     </header>
   );
