@@ -94,10 +94,11 @@ export default function CreatorAdminUsers() {
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-65px)] bg-white px-6 sm:px-12 py-8 sm:py-10">
+    <div className="w-full min-h-[calc(100vh-65px)] bg-white">
       <FeedbackModal feedback={feedback} onClose={() => setFeedback(null)} />
 
-      <div className="max-w-6xl">
+      {/* Kontainer diselaraskan dengan Navbar: mx-auto max-w-6xl px-6 */}
+      <div className="mx-auto max-w-6xl px-6 py-8 sm:py-10">
         {/* ================= HEADER ================= */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-neutral-100">
           <div>
