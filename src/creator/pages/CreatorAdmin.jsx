@@ -68,10 +68,11 @@ export default function CreatorAdmin() {
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-65px)] bg-white px-6 sm:px-12 py-8 sm:py-10">
+    <div className="w-full min-h-[calc(100vh-65px)] bg-white">
       <FeedbackModal feedback={feedback} onClose={() => setFeedback(null)} />
 
-      <div className="max-w-6xl">
+      {/* Kontainer diselaraskan dengan Navbar: mx-auto max-w-6xl px-6 */}
+      <div className="mx-auto max-w-6xl px-6 py-8 sm:py-10">
         {/* ================= HEADER ================= */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-neutral-100">
           <div>
@@ -217,10 +218,9 @@ export default function CreatorAdmin() {
                         </span>
                       </td>
 
-                      {/* Kolom 4: Baris Aksi Sejajar */}
+                      {/* Kolom 4: Baris Aksi */}
                       <td className="py-4 pl-4 pr-6 align-middle font-sans text-right">
                         <div className="inline-flex items-center gap-1.5 justify-end">
-                          {/* Publikasikan jika draft */}
                           {story.status === "draft" && (
                             <button
                               onClick={() =>
@@ -243,7 +243,6 @@ export default function CreatorAdmin() {
                             </button>
                           )}
 
-                          {/* Sembunyikan jika published */}
                           {story.status === "published" && (
                             <button
                               onClick={() =>
@@ -265,7 +264,6 @@ export default function CreatorAdmin() {
                             </button>
                           )}
 
-                          {/* Hapus Cerita */}
                           <button
                             onClick={() =>
                               runAction(
@@ -285,7 +283,6 @@ export default function CreatorAdmin() {
                             <span>Hapus</span>
                           </button>
 
-                          {/* Ban Akun Penulis */}
                           {story.author?.id && !story.author?.is_banned && (
                             <button
                               onClick={() =>
